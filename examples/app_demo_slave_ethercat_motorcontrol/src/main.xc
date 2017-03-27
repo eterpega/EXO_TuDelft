@@ -225,41 +225,48 @@ int main(void)
 
                 /* Position feedback service */
                 {
-                    PositionFeedbackConfig position_feedback_config_1;
-                    position_feedback_config_1.sensor_type = SENSOR_1_TYPE;
-                    position_feedback_config_1.resolution  = SENSOR_1_RESOLUTION;
-                    position_feedback_config_1.polarity    = SENSOR_1_POLARITY;
-                    position_feedback_config_1.velocity_compute_period = SENSOR_1_VELOCITY_COMPUTE_PERIOD;
-                    position_feedback_config_1.pole_pairs  = MOTOR_POLE_PAIRS;
-                    position_feedback_config_1.ifm_usec    = IFM_TILE_USEC;
-                    position_feedback_config_1.max_ticks   = SENSOR_MAX_TICKS;
-                    position_feedback_config_1.offset      = 0;
-                    position_feedback_config_1.sensor_function = SENSOR_1_FUNCTION;
+                    PositionFeedbackConfig position_feedback_config;
+                    position_feedback_config.sensor_type = SENSOR_1_TYPE;
+                    position_feedback_config.resolution  = SENSOR_1_RESOLUTION;
+                    position_feedback_config.polarity    = SENSOR_1_POLARITY;
+                    position_feedback_config.velocity_compute_period = SENSOR_1_VELOCITY_COMPUTE_PERIOD;
+                    position_feedback_config.pole_pairs  = MOTOR_POLE_PAIRS;
+                    position_feedback_config.ifm_usec    = IFM_TILE_USEC;
+                    position_feedback_config.max_ticks   = SENSOR_MAX_TICKS;
+                    position_feedback_config.offset      = 0;
+                    position_feedback_config.sensor_function = SENSOR_1_FUNCTION;
 
-                    position_feedback_config_1.biss_config.multiturn_resolution = BISS_MULTITURN_RESOLUTION;
-                    position_feedback_config_1.biss_config.filling_bits = BISS_FILLING_BITS;
-                    position_feedback_config_1.biss_config.crc_poly = BISS_CRC_POLY;
-                    position_feedback_config_1.biss_config.clock_frequency = BISS_CLOCK_FREQUENCY;
-                    position_feedback_config_1.biss_config.timeout = BISS_TIMEOUT;
-                    position_feedback_config_1.biss_config.busy = BISS_BUSY;
-                    position_feedback_config_1.biss_config.clock_port_config = BISS_CLOCK_PORT;
-                    position_feedback_config_1.biss_config.data_port_number = BISS_DATA_PORT_NUMBER;
+                    position_feedback_config.ssi_config.timeout = 19*IFM_TILE_USEC;
 
-                    position_feedback_config_1.rem_16mt_config.filter = REM_16MT_FILTER;
+                    position_feedback_config.biss_config.multiturn_resolution = BISS_MULTITURN_RESOLUTION;
+                    position_feedback_config.biss_config.filling_bits = BISS_FILLING_BITS;
+                    position_feedback_config.biss_config.crc_poly = BISS_CRC_POLY;
+                    position_feedback_config.biss_config.clock_frequency = BISS_CLOCK_FREQUENCY;
+                    position_feedback_config.biss_config.timeout = BISS_TIMEOUT;
+                    position_feedback_config.biss_config.busy = BISS_BUSY;
+                    position_feedback_config.biss_config.clock_port_config = BISS_CLOCK_PORT;
+                    position_feedback_config.biss_config.data_port_number = BISS_DATA_PORT_NUMBER;
 
-                    position_feedback_config_1.rem_14_config.hysteresis     = REM_14_SENSOR_HYSTERESIS ;
-                    position_feedback_config_1.rem_14_config.noise_setting  = REM_14_SENSOR_NOISE;
-                    position_feedback_config_1.rem_14_config.dyn_angle_comp = REM_14_SENSOR_DAE;
-                    position_feedback_config_1.rem_14_config.abi_resolution = REM_14_SENSOR_ABI_RES;
+                    position_feedback_config.rem_16mt_config.filter = REM_16MT_FILTER;
 
-                    position_feedback_config_1.qei_config.index_type  = QEI_SENSOR_INDEX_TYPE;
-                    position_feedback_config_1.qei_config.signal_type = QEI_SENSOR_SIGNAL_TYPE;
-                    position_feedback_config_1.qei_config.port_number = QEI_SENSOR_PORT_NUMBER;
+                    position_feedback_config.rem_14_config.hysteresis     = REM_14_SENSOR_HYSTERESIS ;
+                    position_feedback_config.rem_14_config.noise_setting  = REM_14_SENSOR_NOISE;
+                    position_feedback_config.rem_14_config.dyn_angle_comp = REM_14_SENSOR_DAE;
+                    position_feedback_config.rem_14_config.abi_resolution = REM_14_SENSOR_ABI_RES;
 
-                    position_feedback_config_1.hall_config.port_number = HALL_SENSOR_PORT_NUMBER;
+                    position_feedback_config.qei_config.index_type  = QEI_SENSOR_INDEX_TYPE;
+                    position_feedback_config.qei_config.signal_type = QEI_SENSOR_SIGNAL_TYPE;
+                    position_feedback_config.qei_config.port_number = QEI_SENSOR_PORT_NUMBER;
+
+                    position_feedback_config.hall_config.port_number = HALL_SENSOR_PORT_NUMBER;
+
+                    position_feedback_config.gpio_config[0] = 5;
+                    position_feedback_config.gpio_config[1] = 5;
+                    position_feedback_config.gpio_config[2] = 5;
+                    position_feedback_config.gpio_config[3] = 5;
 
                     //setting second sensor
-                    PositionFeedbackConfig position_feedback_config_2 = position_feedback_config_1;
+                    PositionFeedbackConfig position_feedback_config_2 = position_feedback_config;
                     position_feedback_config_2.sensor_type = 0;
                     if (SENSOR_2_FUNCTION != SENSOR_FUNCTION_DISABLED) //enable second sensor
                     {
@@ -271,7 +278,7 @@ int main(void)
                     }
 
                     position_feedback_service(qei_hall_port_1, qei_hall_port_2, hall_enc_select_port, spi_ports, gpio_port_0, gpio_port_1, gpio_port_2, gpio_port_3,
-                            position_feedback_config_1, i_shared_memory[0], i_position_feedback_1,
+                            position_feedback_config, i_shared_memory[0], i_position_feedback_1,
                             position_feedback_config_2, i_shared_memory[1], i_position_feedback_2);
                 }
             }
