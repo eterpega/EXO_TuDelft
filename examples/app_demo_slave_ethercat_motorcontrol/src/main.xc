@@ -3,6 +3,7 @@
 #include <CORE_C22-rev-a.bsp>
 #include <IFM_DC1K-rev-c4.bsp>
 
+
 /**
  * @file test_ethercat-mode.xc
  * @brief Test illustrates usage of Motor Control with EtherCAT
@@ -28,7 +29,7 @@
 #include <advanced_motor_control.h>
 
 //Position control + profile libs
-#include <position_ctrl_service.h>
+#include <motion_control_service.h>
 #include <profile_control.h>
 
 EthercatPorts ethercat_ports = SOMANET_COM_ETHERCAT_PORTS;
@@ -50,9 +51,9 @@ int main(void)
     /* Motor control channels */
     interface WatchdogInterface i_watchdog[2];
     interface ADCInterface i_adc[2];
-    interface MotorcontrolInterface i_motorcontrol[2];
-    interface update_pwm i_update_pwm;
-    interface update_brake i_update_brake;
+    interface MotorControlInterface i_motorcontrol[2];
+    interface UpdatePWM i_update_pwm;
+    interface UpdateBrake i_update_brake;
     interface shared_memory_interface i_shared_memory[3];
     interface PositionVelocityCtrlInterface i_position_control[3];
     interface PositionFeedbackInterface i_position_feedback_1[3];
@@ -85,11 +86,10 @@ int main(void)
         {
             ProfilerConfig profiler_config;
 
-            profiler_config.polarity = NORMAL_CONNECTION;        /* Set by Object Dictionary value! */
-            profiler_config.max_position = MAX_POSITION_LIMIT;   /* Set by Object Dictionary value! */
-            profiler_config.min_position = MIN_POSITION_LIMIT;   /* Set by Object Dictionary value! */
+            profiler_config.max_position = MAX_POSITION_RANGE_LIMIT;   /* Set by Object Dictionary value! */
+            profiler_config.min_position = MIN_POSITION_RANGE_LIMIT;   /* Set by Object Dictionary value! */
 
-            profiler_config.max_velocity = MAX_SPEED;
+            profiler_config.max_velocity = MOTOR_MAX_SPEED;
             profiler_config.max_acceleration = MAX_ACCELERATION;
             profiler_config.max_deceleration = MAX_ACCELERATION;
 
@@ -102,7 +102,7 @@ int main(void)
             ethercat_drive_service( profiler_config,
                                     i_pdo, i_coe,
                                     i_motorcontrol[1],
-                                    i_position_control[0], i_position_feedback_1[0]);
+                                    i_position_control[0], i_position_feedback_1[0], i_position_feedback_2[0]);
 #endif
         }
 
@@ -112,47 +112,45 @@ int main(void)
             {
                 /* Position Control Loop */
                 {
-                    PosVelocityControlConfig pos_velocity_ctrl_config;
+                    MotionControlConfig motion_ctrl_config;
 
-                    pos_velocity_ctrl_config.min_pos =                              MIN_POSITION_LIMIT;
-                    pos_velocity_ctrl_config.max_pos =                              MAX_POSITION_LIMIT;
-                    pos_velocity_ctrl_config.max_speed =                            MAX_SPEED;
-                    pos_velocity_ctrl_config.max_torque =                           TORQUE_CONTROL_LIMIT;
-                    pos_velocity_ctrl_config.polarity =                             POLARITY;
+                    motion_ctrl_config.min_pos_range_limit =                  MIN_POSITION_RANGE_LIMIT;
+                    motion_ctrl_config.max_pos_range_limit =                  MAX_POSITION_RANGE_LIMIT;
+                    motion_ctrl_config.max_motor_speed =                      MOTOR_MAX_SPEED;
+                    motion_ctrl_config.polarity =                             POLARITY;
 
-                    pos_velocity_ctrl_config.enable_profiler =                      ENABLE_PROFILER;
-                    pos_velocity_ctrl_config.max_acceleration_profiler =            MAX_ACCELERATION_PROFILER;
-                    pos_velocity_ctrl_config.max_speed_profiler =                   MAX_SPEED_PROFILER;
+                    motion_ctrl_config.enable_profiler =                      ENABLE_PROFILER;
+                    motion_ctrl_config.max_acceleration_profiler =            MAX_ACCELERATION_PROFILER;
+                    motion_ctrl_config.max_speed_profiler =                   MAX_SPEED_PROFILER;
+                    //select resolution of sensor used for motion control
+                    if (SENSOR_2_FUNCTION == SENSOR_FUNCTION_COMMUTATION_AND_MOTION_CONTROL || SENSOR_2_FUNCTION == SENSOR_FUNCTION_MOTION_CONTROL) {
+                        motion_ctrl_config.resolution  =                      SENSOR_2_RESOLUTION;
+                    } else {
+                        motion_ctrl_config.resolution  =                      SENSOR_1_RESOLUTION;
+                    }
 
-                    pos_velocity_ctrl_config.control_mode =                         NL_POSITION_CONTROLLER;
+                    motion_ctrl_config.position_control_strategy =            NL_POSITION_CONTROLLER;
 
-                    pos_velocity_ctrl_config.P_pos =                                POSITION_Kp;
-                    pos_velocity_ctrl_config.I_pos =                                POSITION_Ki;
-                    pos_velocity_ctrl_config.D_pos =                                POSITION_Kd;
-                    pos_velocity_ctrl_config.integral_limit_pos =                   POSITION_INTEGRAL_LIMIT;
-                    pos_velocity_ctrl_config.j =                                    MOMENT_OF_INERTIA;
+                    motion_ctrl_config.position_kp =                          POSITION_Kp;
+                    motion_ctrl_config.position_ki =                          POSITION_Ki;
+                    motion_ctrl_config.position_kd =                          POSITION_Kd;
+                    motion_ctrl_config.position_integral_limit =              POSITION_INTEGRAL_LIMIT;
+                    motion_ctrl_config.moment_of_inertia =                    MOMENT_OF_INERTIA;
 
-                    pos_velocity_ctrl_config.P_velocity =                           VELOCITY_Kp;
-                    pos_velocity_ctrl_config.I_velocity =                           VELOCITY_Ki;
-                    pos_velocity_ctrl_config.D_velocity =                           VELOCITY_Kd;
-                    pos_velocity_ctrl_config.integral_limit_velocity =              VELOCITY_INTEGRAL_LIMIT;
+                    motion_ctrl_config.velocity_kp =                          VELOCITY_Kp;
+                    motion_ctrl_config.velocity_ki =                          VELOCITY_Ki;
+                    motion_ctrl_config.velocity_kd =                          VELOCITY_Kd;
+                    motion_ctrl_config.velocity_integral_limit =              VELOCITY_INTEGRAL_LIMIT;
 
-                    pos_velocity_ctrl_config.special_brake_release =                ENABLE_SHAKE_BRAKE;
-                    pos_velocity_ctrl_config.brake_shutdown_delay =                 BRAKE_SHUTDOWN_DELAY;
-                    pos_velocity_ctrl_config.resolution  =                          SENSOR_1_RESOLUTION;
+                    motion_ctrl_config.special_brake_release =                ENABLE_SHAKE_BRAKE;
+                    motion_ctrl_config.brake_shutdown_delay =                 BRAKE_SHUTDOWN_DELAY;
 
-                    pos_velocity_ctrl_config.voltage_pull_brake=                    VOLTAGE_PULL_BRAKE;
-                    pos_velocity_ctrl_config.time_pull_brake =                      TIME_PULL_BRAKE;
-                    pos_velocity_ctrl_config.voltage_hold_brake =                   VOLTAGE_HOLD_BRAKE;
+                    motion_ctrl_config.dc_bus_voltage=                        DC_BUS_VOLTAGE;
+                    motion_ctrl_config.pull_brake_voltage=                    PULL_BRAKE_VOLTAGE;
+                    motion_ctrl_config.pull_brake_time =                      PULL_BRAKE_TIME;
+                    motion_ctrl_config.hold_brake_voltage =                   HOLD_BRAKE_VOLTAGE;
 
-
-                    pos_velocity_ctrl_config.nominal_v_dc=                          VDC;
-                    pos_velocity_ctrl_config.voltage_pull_brake=                    VOLTAGE_PULL_BRAKE;
-                    pos_velocity_ctrl_config.time_pull_brake =                      TIME_PULL_BRAKE;
-                    pos_velocity_ctrl_config.voltage_hold_brake =                   VOLTAGE_HOLD_BRAKE;
-
-                    position_velocity_control_service(IFM_TILE_USEC, pos_velocity_ctrl_config, i_motorcontrol[0], i_position_control, i_update_brake);
-
+                    motion_control_service(IFM_TILE_USEC, motion_ctrl_config, i_motorcontrol[0], i_position_control, i_update_brake);
                 }
             }
         }
@@ -191,31 +189,32 @@ int main(void)
                 {
                     MotorcontrolConfig motorcontrol_config;
 
-                    motorcontrol_config.v_dc =  VDC;
-                    motorcontrol_config.terminal_connection = NORMAL_CONNECTION;
-                    motorcontrol_config.current_P_gain =  TORQUE_Kp;
-                    motorcontrol_config.current_I_gain =  TORQUE_Ki;
-                    motorcontrol_config.current_D_gain =  TORQUE_Kd;
-                    motorcontrol_config.pole_pair =  POLE_PAIRS;
-                    motorcontrol_config.commutation_sensor= SENSOR_1_TYPE;
-                    motorcontrol_config.commutation_angle_offset=COMMUTATION_OFFSET_CLK;
+                    motorcontrol_config.v_dc =  DC_BUS_VOLTAGE;
+                    motorcontrol_config.phases_inverted = MOTOR_PHASES_NORMAL;
+                    motorcontrol_config.torque_P_gain =  TORQUE_P_VALUE;
+                    motorcontrol_config.torque_I_gain =  TORQUE_I_VALUE;
+                    motorcontrol_config.torque_D_gain =  TORQUE_D_VALUE;
+                    motorcontrol_config.pole_pairs =  MOTOR_POLE_PAIRS;
+                    motorcontrol_config.commutation_sensor=SENSOR_1_TYPE;
+                    motorcontrol_config.commutation_angle_offset=COMMUTATION_ANGLE_OFFSET;
                     motorcontrol_config.hall_state_angle[0]=HALL_STATE_1_ANGLE;
                     motorcontrol_config.hall_state_angle[1]=HALL_STATE_2_ANGLE;
                     motorcontrol_config.hall_state_angle[2]=HALL_STATE_3_ANGLE;
                     motorcontrol_config.hall_state_angle[3]=HALL_STATE_4_ANGLE;
                     motorcontrol_config.hall_state_angle[4]=HALL_STATE_5_ANGLE;
                     motorcontrol_config.hall_state_angle[5]=HALL_STATE_6_ANGLE;
-                    motorcontrol_config.max_torque =  MAXIMUM_TORQUE;
-                    motorcontrol_config.phase_resistance =  PHASE_RESISTANCE;
-                    motorcontrol_config.phase_inductance =  PHASE_INDUCTANCE;
-                    motorcontrol_config.torque_constant =  PERCENT_TORQUE_CONSTANT;
+                    motorcontrol_config.max_torque =  MOTOR_MAXIMUM_TORQUE;
+                    motorcontrol_config.phase_resistance =  MOTOR_PHASE_RESISTANCE;
+                    motorcontrol_config.phase_inductance =  MOTOR_PHASE_INDUCTANCE;
+                    motorcontrol_config.torque_constant =  MOTOR_TORQUE_CONSTANT;
                     motorcontrol_config.current_ratio =  CURRENT_RATIO;
-                    motorcontrol_config.rated_current =  RATED_CURRENT;
-                    motorcontrol_config.rated_torque  =  RATED_TORQUE;
-                    motorcontrol_config.percent_offset_torque =  PERCENT_OFFSET_TORQUE;
-                    motorcontrol_config.protection_limit_over_current =  I_MAX;
-                    motorcontrol_config.protection_limit_over_voltage =  V_DC_MAX;
-                    motorcontrol_config.protection_limit_under_voltage = V_DC_MIN;
+                    motorcontrol_config.voltage_ratio =  VOLTAGE_RATIO;
+                    motorcontrol_config.rated_current =  MOTOR_RATED_CURRENT;
+                    motorcontrol_config.rated_torque  =  MOTOR_RATED_TORQUE;
+                    motorcontrol_config.percent_offset_torque =  APPLIED_TUNING_TORQUE_PERCENT;
+                    motorcontrol_config.protection_limit_over_current =  PROTECTION_MAXIMUM_CURRENT;
+                    motorcontrol_config.protection_limit_over_voltage =  PROTECTION_MAXIMUM_VOLTAGE;
+                    motorcontrol_config.protection_limit_under_voltage = PROTECTION_MINIMUM_VOLTAGE;
 
                     motor_control_service(motorcontrol_config, i_adc[0], i_shared_memory[2],
                             i_watchdog[0], i_motorcontrol, i_update_pwm, IFM_TILE_USEC);
@@ -231,7 +230,7 @@ int main(void)
                     position_feedback_config.resolution  = SENSOR_1_RESOLUTION;
                     position_feedback_config.polarity    = SENSOR_1_POLARITY;
                     position_feedback_config.velocity_compute_period = SENSOR_1_VELOCITY_COMPUTE_PERIOD;
-                    position_feedback_config.pole_pairs  = POLE_PAIRS;
+                    position_feedback_config.pole_pairs  = MOTOR_POLE_PAIRS;
                     position_feedback_config.ifm_usec    = IFM_TILE_USEC;
                     position_feedback_config.max_ticks   = SENSOR_MAX_TICKS;
                     position_feedback_config.offset      = 0;
