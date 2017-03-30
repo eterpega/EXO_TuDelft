@@ -13,6 +13,8 @@
 // Please configure your slave's default motorcontrol parameters in config_motor_slave/user_config.h.
 // These parameter will be eventually overwritten by the app running on the EtherCAT master
 #include <user_config.h>
+#include <stdio.h>
+#include <print.h>
 
 #include <ethercat_drive_service.h>
 #include <reboot.h>
@@ -92,12 +94,13 @@ int main(void)
             profiler_config.max_velocity = MOTOR_MAX_SPEED;
             profiler_config.max_acceleration = MAX_ACCELERATION;
             profiler_config.max_deceleration = MAX_ACCELERATION;
+            printf("Starting ethercat drive service\n");
 
 #if 0
             ethercat_drive_service_debug( profiler_config,
                                     i_pdo, i_coe,
                                     i_motorcontrol[1],
-                                    i_position_control[0], i_position_feedback[0]);
+                                    i_position_control[0], i_position_feedback_1[0]);
 #else
             ethercat_drive_service( profiler_config,
                                     i_pdo, i_coe,
