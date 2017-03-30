@@ -493,6 +493,7 @@ void tuning_command(
         tuning_status.motorctrl_status = TUNING_MOTORCTRL_OFF;
         tuning_status.brake_flag = 0;
         motorcontrol_config = i_position_control.set_offset_detection_enabled();
+        printf("Offset is %d\n", motorcontrol_config.commutation_angle_offset);
         break;
 
     //set offset
@@ -502,6 +503,10 @@ void tuning_command(
         motorcontrol_config.commutation_angle_offset = tuning_status.value;
         i_position_control.set_motorcontrol_config(motorcontrol_config);
         printf("set offset to %d\n", tuning_status.value);
+        break;
+
+    case 'D':
+        printf("Position: %d\n", i_position_control.get_position());
         break;
 
     //set brake
@@ -525,35 +530,34 @@ void tuning_command(
         } /* end mode_2 */
         break;
 
-    //set zero position
+    //remove faults
     case 'z':
-        if (sensor_motion_control == 2) {
-            if (!isnull(i_position_feedback_2)) {
-                switch(tuning_status.mode_2) {
-                case 'z':
-                    i_position_feedback_2.send_command(REM_16MT_CONF_NULL, 0, 0);
-                    break;
-                default:
-                    i_position_feedback_2.send_command(REM_16MT_CONF_MTPRESET, tuning_status.value, 16);
-                    break;
-                }
-                i_position_feedback_2.send_command(REM_16MT_CTRL_SAVE, 0, 0);
-                i_position_feedback_2.send_command(REM_16MT_CTRL_RESET, 0, 0);
-            }
+        UpstreamControlData upstream_control_data = i_position_control.update_control_data(downstream_control_data);
+
+        if (upstream_control_data.error_status == NO_FAULT) {
+            printf("No fault\n");
         } else {
-            if (!isnull(i_position_feedback_1)) {
-                switch(tuning_status.mode_2) {
-                case 'z':
-                    i_position_feedback_1.send_command(REM_16MT_CONF_NULL, 0, 0);
-                    break;
-                default:
-                    i_position_feedback_1.send_command(REM_16MT_CONF_MTPRESET, tuning_status.value, 16);
-                    break;
-                }
-                i_position_feedback_1.send_command(REM_16MT_CTRL_SAVE, 0, 0);
-                i_position_feedback_1.send_command(REM_16MT_CTRL_RESET, 0, 0);
+            //disable position and motorcontrol
+            i_position_control.disable();
+
+            if(upstream_control_data.error_status != NO_FAULT)
+                printf(">>  FAULT ID %i DETECTED ...\n", upstream_control_data.error_status);
+
+            //reset fault
+            printf("Reset fault...\n");
+            i_position_control.reset_motorcontrol_faults();
+
+            //check if reset worked
+            delay_milliseconds(500);
+            upstream_control_data = i_position_control.update_control_data(downstream_control_data);
+            if(upstream_control_data.error_status == NO_FAULT)
+            {
+                printf(">>  FAULT REMOVED\n");
+            } else {
+                printf(">>  FAULT ID %i NOT REMOVED!\n");
             }
         }
+
         break;
 
     //reverse torque
