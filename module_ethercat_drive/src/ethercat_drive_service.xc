@@ -671,7 +671,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                 if (quick_stop_steps == 0) {
                     quick_stop_steps = quick_stop_init(opmode, actual_velocity, sensor_resolution, actual_position, profiler_config);
                 }
-            }
+
 
                 { qs_target, quick_stop_steps_left } = quick_stop_perform(opmode, quick_stop_steps, actual_velocity);
 
@@ -830,7 +830,7 @@ void ethercat_drive_service_debug(ProfilerConfig &profiler_config,
 //            i_position_control.enable_torque_ctrl();
            //i_position_control.enable_velocity_ctrl();
            //printstr("enable\n");
-            i_position_control.enable_position_ctrl(POS_PID_CONTROLLER);
+            i_position_control.enable_velocity_ctrl();
             enabled = 1;
         }
         else {
@@ -838,7 +838,7 @@ void ethercat_drive_service_debug(ProfilerConfig &profiler_config,
 //            i_position_control.set_velocity(0);
 //            i_position_control.set_position(0);
 //            i_position_control.set_velocity(500);
-            send_to_control.position_cmd = 100000;
+            send_to_control.velocity_cmd = 300;
 //            send_to_control.offset_torque = 0;
         }
 
