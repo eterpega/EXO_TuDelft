@@ -6,6 +6,7 @@
 
 #include <stdint.h>
 #include <dictionary_symbols.h>
+#include <state_modes.h>
 #include <position_feedback_service.h>
 #include "config_manager.h"
 #include <xs1.h>
@@ -133,7 +134,7 @@ int cm_sync_config_position_feedback(
     config.sensor_function         = sensor_function;
     config.resolution              = i_coe.get_object_value(feedback_sensor_object, 3);
     config.velocity_compute_period = i_coe.get_object_value(feedback_sensor_object, 4);
-    config.polarity                = sext(i_coe.get_object_value(feedback_sensor_object, 5), 8);
+    config.polarity                = i_coe.get_object_value(feedback_sensor_object, 5);
     config.pole_pairs              = i_coe.get_object_value(DICT_MOTOR_SPECIFIC_SETTINGS, SUB_MOTOR_SPECIFIC_SETTINGS_POLE_PAIRS);
 
     // sensor specific parameters
@@ -201,7 +202,7 @@ void cm_sync_config_motor_control(
 
     motorcontrol_config = i_motorcontrol.get_config();
 
-    motorcontrol_config.v_dc                     = i_coe.get_object_value(DICT_BREAK_RELEASE, SUB_BREAK_RELEASE_DC_BUS_VOLTAGE);
+    motorcontrol_config.dc_bus_voltage           = i_coe.get_object_value(DICT_BREAK_RELEASE, SUB_BREAK_RELEASE_DC_BUS_VOLTAGE);
     motorcontrol_config.phases_inverted          = sext(i_coe.get_object_value(DICT_MOTOR_SPECIFIC_SETTINGS, SUB_MOTOR_SPECIFIC_SETTINGS_MOTOR_PHASES_INVERTED), 8);
     motorcontrol_config.torque_P_gain            = i_coe.get_object_value(DICT_TORQUE_CONTROLLER, SUB_TORQUE_CONTROLLER_CONTROLLER_KP);
     motorcontrol_config.torque_I_gain            = i_coe.get_object_value(DICT_TORQUE_CONTROLLER, SUB_TORQUE_CONTROLLER_CONTROLLER_KI);
@@ -279,9 +280,6 @@ void cm_sync_config_pos_velocity_control(
     position_config.max_motor_speed     = i_coe.get_object_value(DICT_MAX_MOTOR_SPEED, 0);
     position_config.max_torque          = i_coe.get_object_value(DICT_MAX_TORQUE, 0);
 
-    /* Copy the raw value from the object to the parameter */
-    position_config.polarity        = i_coe.get_object_value(DICT_POLARITY, 0);
-
     position_config.enable_profiler = i_coe.get_object_value(DICT_MOTION_PROFILE_TYPE, 0); //FIXME: profiler setting missing
     position_config.resolution      = sensor_resolution;
 
@@ -299,8 +297,8 @@ void cm_sync_config_pos_velocity_control(
     position_config.velocity_integral_limit = i_coe.get_object_value(DICT_VELOCITY_CONTROLLER, SUB_VELOCITY_CONTROLLER_CONTROLLER_INTEGRAL_LIMIT);
 
     /* Brake control settings */
-    position_config.special_brake_release = i_coe.get_object_value(DICT_BREAK_RELEASE, SUB_BREAK_RELEASE_BRAKE_RELEASE_STRATEGY);
-    position_config.brake_shutdown_delay  = i_coe.get_object_value(DICT_BREAK_RELEASE, SUB_BREAK_RELEASE_BRAKE_RELEASE_DELAY);
+    position_config.brake_release_strategy = i_coe.get_object_value(DICT_BREAK_RELEASE, SUB_BREAK_RELEASE_BRAKE_RELEASE_STRATEGY);
+    position_config.brake_release_delay  = i_coe.get_object_value(DICT_BREAK_RELEASE, SUB_BREAK_RELEASE_BRAKE_RELEASE_DELAY);
     position_config.dc_bus_voltage        = i_coe.get_object_value(DICT_BREAK_RELEASE, SUB_BREAK_RELEASE_DC_BUS_VOLTAGE);
     position_config.pull_brake_voltage    = i_coe.get_object_value(DICT_BREAK_RELEASE, SUB_BREAK_RELEASE_PULL_BRAKE_VOLTAGE);
     position_config.pull_brake_time       = i_coe.get_object_value(DICT_BREAK_RELEASE, SUB_BREAK_RELEASE_PULL_BRAKE_TIME);
@@ -426,7 +424,7 @@ void cm_default_config_motor_control(
 
     motorcontrol_config = i_motorcontrol.get_config();
 
-    i_coe.set_object_value(DICT_BREAK_RELEASE, SUB_BREAK_RELEASE_DC_BUS_VOLTAGE, motorcontrol_config.v_dc);
+    i_coe.set_object_value(DICT_BREAK_RELEASE, SUB_BREAK_RELEASE_DC_BUS_VOLTAGE, motorcontrol_config.dc_bus_voltage);
     i_coe.set_object_value(DICT_MOTOR_SPECIFIC_SETTINGS, SUB_MOTOR_SPECIFIC_SETTINGS_MOTOR_PHASES_INVERTED, motorcontrol_config.phases_inverted);
     i_coe.set_object_value(DICT_TORQUE_CONTROLLER, SUB_TORQUE_CONTROLLER_CONTROLLER_KP, motorcontrol_config.torque_P_gain);
     i_coe.set_object_value(DICT_TORQUE_CONTROLLER, SUB_TORQUE_CONTROLLER_CONTROLLER_KI, motorcontrol_config.torque_I_gain);
@@ -506,7 +504,10 @@ void cm_default_config_pos_velocity_control(
     i_coe.set_object_value(DICT_POSITION_RANGE_LIMITS, SUB_POSITION_RANGE_LIMITS_MAX_POSITION_RANGE_LIMIT, position_config.max_pos_range_limit);
     i_coe.set_object_value(DICT_MAX_MOTOR_SPEED, 0, position_config.max_motor_speed);
 
-    i_coe.set_object_value(DICT_POLARITY, 0, position_config.polarity);
+    //if the internal polarity is inverted enable inverted position and velocity polarity bits in the DICT_POLARITY object
+    if (position_config.polarity == MOTION_POLARITY_INVERTED) {
+        i_coe.set_object_value(DICT_POLARITY, 0, MOTION_POLARITY_POSITION|MOTION_POLARITY_VELOCITY);
+    }
 
     i_coe.set_object_value(DICT_MOTION_PROFILE_TYPE, 0, position_config.enable_profiler);
 
@@ -526,8 +527,8 @@ void cm_default_config_pos_velocity_control(
     i_coe.set_object_value(DICT_VELOCITY_CONTROLLER, SUB_VELOCITY_CONTROLLER_CONTROLLER_INTEGRAL_LIMIT, position_config.velocity_integral_limit);
 
     /* Brake control settings */
-    i_coe.set_object_value(DICT_BREAK_RELEASE, SUB_BREAK_RELEASE_BRAKE_RELEASE_STRATEGY, position_config.special_brake_release);
-    i_coe.set_object_value(DICT_BREAK_RELEASE, SUB_BREAK_RELEASE_BRAKE_RELEASE_DELAY, position_config.brake_shutdown_delay);
+    i_coe.set_object_value(DICT_BREAK_RELEASE, SUB_BREAK_RELEASE_BRAKE_RELEASE_STRATEGY, position_config.brake_release_strategy);
+    i_coe.set_object_value(DICT_BREAK_RELEASE, SUB_BREAK_RELEASE_BRAKE_RELEASE_DELAY, position_config.brake_release_delay);
     i_coe.set_object_value(DICT_BREAK_RELEASE, SUB_BREAK_RELEASE_DC_BUS_VOLTAGE, position_config.dc_bus_voltage);
     i_coe.set_object_value(DICT_BREAK_RELEASE, SUB_BREAK_RELEASE_PULL_BRAKE_VOLTAGE, position_config.pull_brake_voltage);
     i_coe.set_object_value(DICT_BREAK_RELEASE, SUB_BREAK_RELEASE_PULL_BRAKE_TIME, position_config.pull_brake_time);

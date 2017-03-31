@@ -189,6 +189,7 @@ static void inline update_configuration(
         int &sensor_commutation, int &sensor_motion_control,
         int &limit_switch_type,
         int &sensor_resolution,
+        uint8_t &polarity,
         int &nominal_speed,
         int &homing_method,
         int &opmode)
@@ -241,6 +242,7 @@ static void inline update_configuration(
     nominal_speed     = i_coe.get_object_value(DICT_MAX_MOTOR_SPEED, 0);
     limit_switch_type = 0; //i_coe.get_object_value(LIMIT_SWITCH_TYPE, 0); /* not used now */
     homing_method     = 0; //i_coe.get_object_value(CIA402_HOMING_METHOD, 0); /* not used now */
+    polarity          = i_coe.get_object_value(DICT_POLARITY, 0);
 }
 
 static void motioncontrol_enable(int opmode, int position_control_strategy,
@@ -364,10 +366,10 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
     int inactive_timeout_flag = 0;
 
     /* tuning specific variables */
-    int tuning_control = 0;
-    //int tuningpdo_status = 0;
-    uint32_t tuning_result = 0;
-    TuningStatus tuning_status = {0};
+    uint32_t tuning_command = 0;
+    uint32_t tuning_status = 0;
+    uint32_t user_miso = 0;
+    TuningModeState tuning_mode_state = {0};
 
     unsigned int time;
     enum e_States state     = S_NOT_READY_TO_SWITCH_ON;
@@ -385,6 +387,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
     int homing_method;
 
     int sensor_resolution = 0;
+    uint8_t polarity = 0;
 
     PositionFeedbackConfig position_feedback_config_1 = i_position_feedback_1.get_config();
     PositionFeedbackConfig position_feedback_config_2;
@@ -432,10 +435,11 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         if (read_configuration) {
             update_configuration(i_coe, i_motorcontrol, i_position_control, i_position_feedback_1, i_position_feedback_2,
                     position_velocity_config, position_feedback_config_1, position_feedback_config_2, motorcontrol_config, profiler_config,
-                    sensor_commutation, sensor_motion_control, limit_switch_type, sensor_resolution, nominal_speed, homing_method,
+                    sensor_commutation, sensor_motion_control, limit_switch_type, sensor_resolution, polarity, nominal_speed, homing_method,
                     opmode
                     );
-
+            tuning_mode_state.flags = tuning_set_flags(tuning_mode_state, motorcontrol_config, position_velocity_config,
+                    position_feedback_config_1, position_feedback_config_2, sensor_commutation);
             read_configuration = 0;
             i_coe.configuration_done();
         }
@@ -444,7 +448,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
          *  local state variables
          */
         controlword     = pdo_get_controlword(InOut);
-        opmode_request  = pdo_get_opmode(InOut);
+        opmode_request  = pdo_get_op_mode(InOut);
         target_position = pdo_get_target_position(InOut);
         target_velocity = pdo_get_target_velocity(InOut);
         target_torque   = pdo_get_target_torque(InOut);
@@ -454,8 +458,8 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
          */
 
         /* tuning pdos */
-        tuning_control = pdo_get_tuning_command(InOut); // mode 3 for tuning (mode 1 and 2 are in controlword)
-        tuning_status.value = pdo_get_user_mosi(InOut); // value of tuning command
+        tuning_command = pdo_get_tuning_command(InOut); // mode 3, 2 and 1 in tuning command
+        tuning_mode_state.value = pdo_get_user_mosi(InOut); // value of tuning command
 
         /*
         printint(state);
@@ -463,11 +467,9 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         printhexln(statusword);
         */
 
-        if (opmode != OPMODE_SNCN_TUNING) {
-            send_to_control.position_cmd = target_position;
-            send_to_control.velocity_cmd = target_velocity;
-            send_to_control.torque_cmd   = target_torque;
-        }
+        send_to_control.position_cmd = target_position;
+        send_to_control.velocity_cmd = target_velocity;
+        send_to_control.torque_cmd   = target_torque;
 
         if (quick_stop_steps != 0) {
             switch (opmode) {
@@ -527,15 +529,20 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
          *  update values to send
          */
         pdo_set_statusword(statusword, InOut);
-        pdo_set_opmode_display(opmode, InOut);
+        pdo_set_op_mode_display(opmode, InOut);
         pdo_set_velocity_value(actual_velocity, InOut);
         pdo_set_torque_value(actual_torque, InOut );
         pdo_set_position_value(actual_position, InOut);
+        pdo_set_secondary_position_value(send_to_master.position_additional, InOut);
+        pdo_set_secondary_velocity_value(send_to_master.velocity_additional, InOut);
         // FIXME this is one of the analog inputs?
         pdo_set_analog_input1((1000 * 5 * send_to_master.analogue_input_a_1) / 4096, InOut); /* ticks to (edit:) milli-volt */
-        pdo_set_tuning_status(tuning_result, InOut);
+        pdo_set_tuning_status(tuning_status, InOut);
+        pdo_set_user_miso(user_miso, InOut);
+        pdo_set_timestamp(time/100, InOut);
 
-        //xscope_int(USER_TORQUE, (1000 * 5 * send_to_master.sensor_torque) / 4096);
+//        xscope_int(ACTUAL_VELOCITY, actual_velocity);
+//        xscope_int(ACTUAL_POSITION, actual_position);
 
         /* Read/Write packets to ethercat Master application */
         communication_active = pdo_handler(i_pdo, InOut);
@@ -562,14 +569,15 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         /*
          * new, perform actions according to state
          */
-        //debug_print_state(state);
+        debug_print_state(state);
 
         if (opmode == OPMODE_NONE) {
             statusword      = update_statusword(statusword, state, 0, 0, 0); /* FiXME update ack, q_active and shutdown_ack */
             /* for safety considerations, if no opmode choosen, the brake should blocking. */
             i_motorcontrol.set_brake_status(0);
-            if (opmode_request != OPMODE_NONE)
-                opmode = opmode_request;
+
+            //check and update opmode
+            opmode = update_opmode(opmode, opmode_request, i_position_control, position_velocity_config, polarity);
 
         } else if (opmode == OPMODE_CSP || opmode == OPMODE_CST || opmode == OPMODE_CSV) {
             /* FIXME Put this into a separate CSP, CST, CSV function! */
@@ -599,11 +607,9 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                 break;
 
             case S_SWITCH_ON_DISABLED:
-                if (opmode_request == OPMODE_CSP) { /* FIXME check for supported opmodes if applicable */
-                    opmode = opmode;
-                } else {
-                    opmode = opmode_request;
-                }
+                /* we allow opmode change in this state */
+                //check and update opmode
+                opmode = update_opmode(opmode, opmode_request, i_position_control, position_velocity_config, polarity);
 
                 /* communication active, idle no motor control; read opmode from PDO and set control accordingly */
                 state = get_next_state(state, checklist, controlword, 0);
@@ -715,23 +721,28 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
 
         } else if (opmode == OPMODE_SNCN_TUNING) {
             /* run offset tuning -> this will be called as long as OPMODE_SNCN_TUNING is set */
-            tuning_handler_ethercat(controlword, tuning_control,
-                    statusword, tuning_result,
-                    tuning_status,
+            tuning_handler_ethercat(tuning_command,
+                    user_miso, tuning_status,
+                    tuning_mode_state,
                     motorcontrol_config, position_velocity_config, position_feedback_config_1, position_feedback_config_2,
                     sensor_commutation, sensor_motion_control,
                     send_to_master, send_to_control,
                     i_position_control, i_position_feedback_1, i_position_feedback_2);
 
+            //check and update opmode
+            opmode = update_opmode(opmode, opmode_request, i_position_control, position_velocity_config, polarity);
+
             //exit tuning mode
-            if (opmode_request != opmode) {
+            if (opmode != OPMODE_SNCN_TUNING) {
                 opmode = opmode_request; /* stop tuning and switch to new opmode */
                 i_position_control.disable();
                 state = S_SWITCH_ON_DISABLED;
                 statusword      = update_statusword(0, state, 0, 0, 0); /* FiXME update ack, q_active and shutdown_ack */
                 //reset tuning status
-                tuning_status.brake_flag = 0;
-                tuning_status.motorctrl_status = TUNING_MOTORCTRL_OFF;
+                tuning_mode_state.brake_flag = 0;
+                tuning_mode_state.flags = tuning_set_flags(tuning_mode_state, motorcontrol_config, position_velocity_config,
+                        position_feedback_config_1, position_feedback_config_2, sensor_commutation);
+                tuning_mode_state.motorctrl_status = TUNING_MOTORCTRL_OFF;
             }
         } else {
             /* if a unknown or unsupported opmode is requested we simply return
