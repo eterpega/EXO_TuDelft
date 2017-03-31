@@ -841,7 +841,7 @@ void ethercat_drive_service_debug(ProfilerConfig &profiler_config,
 //            i_position_control.enable_torque_ctrl();
            //i_position_control.enable_velocity_ctrl();
            //printstr("enable\n");
-            i_position_control.enable_position_ctrl(POS_PID_CONTROLLER);
+            i_position_control.enable_velocity_ctrl();
             enabled = 1;
         }
         else {
@@ -849,7 +849,7 @@ void ethercat_drive_service_debug(ProfilerConfig &profiler_config,
 //            i_position_control.set_velocity(0);
 //            i_position_control.set_position(0);
 //            i_position_control.set_velocity(500);
-            send_to_control.position_cmd = 100000;
+            send_to_control.velocity_cmd = 300;
 //            send_to_control.offset_torque = 0;
         }
 
