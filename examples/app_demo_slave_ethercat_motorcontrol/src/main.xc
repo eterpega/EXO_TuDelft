@@ -152,88 +152,9 @@ int main(void)
                 }
 
 
-                on tile[IFM_TILE]:
+        on tile[IFM_TILE]:
                 {
-                    watchdog_service(wd_ports, i_watchdog, IFM_TILE_USEC);
-                }
-
-                /* Motor Control Service */
-                {
-                    MotorcontrolConfig motorcontrol_config;
-
-                    motorcontrol_config.dc_bus_voltage =  DC_BUS_VOLTAGE;
-                    motorcontrol_config.phases_inverted = MOTOR_PHASES_NORMAL;
-                    motorcontrol_config.torque_P_gain =  TORQUE_P_VALUE;
-                    motorcontrol_config.torque_I_gain =  TORQUE_I_VALUE;
-                    motorcontrol_config.torque_D_gain =  TORQUE_D_VALUE;
-                    motorcontrol_config.pole_pairs =  MOTOR_POLE_PAIRS;
-                    motorcontrol_config.commutation_sensor=SENSOR_1_TYPE;
-                    motorcontrol_config.commutation_angle_offset=COMMUTATION_ANGLE_OFFSET;
-                    motorcontrol_config.hall_state_angle[0]=HALL_STATE_1_ANGLE;
-                    motorcontrol_config.hall_state_angle[1]=HALL_STATE_2_ANGLE;
-                    motorcontrol_config.hall_state_angle[2]=HALL_STATE_3_ANGLE;
-                    motorcontrol_config.hall_state_angle[3]=HALL_STATE_4_ANGLE;
-                    motorcontrol_config.hall_state_angle[4]=HALL_STATE_5_ANGLE;
-                    motorcontrol_config.hall_state_angle[5]=HALL_STATE_6_ANGLE;
-                    motorcontrol_config.max_torque =  MOTOR_MAXIMUM_TORQUE;
-                    motorcontrol_config.phase_resistance =  MOTOR_PHASE_RESISTANCE;
-                    motorcontrol_config.phase_inductance =  MOTOR_PHASE_INDUCTANCE;
-                    motorcontrol_config.torque_constant =  MOTOR_TORQUE_CONSTANT;
-                    motorcontrol_config.current_ratio =  CURRENT_RATIO;
-                    motorcontrol_config.voltage_ratio =  VOLTAGE_RATIO;
-                    motorcontrol_config.rated_current =  MOTOR_RATED_CURRENT;
-                    motorcontrol_config.rated_torque  =  MOTOR_RATED_TORQUE;
-                    motorcontrol_config.percent_offset_torque =  APPLIED_TUNING_TORQUE_PERCENT;
-                    motorcontrol_config.protection_limit_over_current =  PROTECTION_MAXIMUM_CURRENT;
-                    motorcontrol_config.protection_limit_over_voltage =  PROTECTION_MAXIMUM_VOLTAGE;
-                    motorcontrol_config.protection_limit_under_voltage = PROTECTION_MINIMUM_VOLTAGE;
-
-                    motor_control_service(motorcontrol_config, i_adc[0], i_shared_memory[2],
-                            i_watchdog[0], i_motorcontrol, i_update_pwm, IFM_TILE_USEC);
-                }
-
-                /* Shared memory Service */
-                [[distribute]] shared_memory_service(i_shared_memory, 3);
-
-                /* Position feedback service */
-                {
-                    PositionFeedbackConfig position_feedback_config_1;
-                    position_feedback_config_1.sensor_type = SENSOR_1_TYPE;
-                    position_feedback_config_1.resolution  = SENSOR_1_RESOLUTION;
-                    position_feedback_config_1.polarity    = SENSOR_1_POLARITY;
-                    position_feedback_config_1.velocity_compute_period = SENSOR_1_VELOCITY_COMPUTE_PERIOD;
-                    position_feedback_config_1.pole_pairs  = MOTOR_POLE_PAIRS;
-                    position_feedback_config_1.ifm_usec    = IFM_TILE_USEC;
-                    position_feedback_config_1.max_ticks   = SENSOR_MAX_TICKS;
-                    position_feedback_config_1.offset      = 0;
-                    position_feedback_config_1.sensor_function = SENSOR_1_FUNCTION;
-
-                    position_feedback_config_1.biss_config.multiturn_resolution = BISS_MULTITURN_RESOLUTION;
-                    position_feedback_config_1.biss_config.filling_bits = BISS_FILLING_BITS;
-                    position_feedback_config_1.biss_config.crc_poly = BISS_CRC_POLY;
-                    position_feedback_config_1.biss_config.clock_frequency = BISS_CLOCK_FREQUENCY;
-                    position_feedback_config_1.biss_config.timeout = BISS_TIMEOUT;
-                    position_feedback_config_1.biss_config.busy = BISS_BUSY;
-                    position_feedback_config_1.biss_config.clock_port_config = BISS_CLOCK_PORT;
-                    position_feedback_config_1.biss_config.data_port_number = BISS_DATA_PORT_NUMBER;
-
-                    position_feedback_config_1.rem_16mt_config.filter = REM_16MT_FILTER;
-
-                    position_feedback_config_1.rem_14_config.hysteresis     = REM_14_SENSOR_HYSTERESIS ;
-                    position_feedback_config_1.rem_14_config.noise_setting  = REM_14_SENSOR_NOISE;
-                    position_feedback_config_1.rem_14_config.dyn_angle_comp = REM_14_SENSOR_DAE;
-                    position_feedback_config_1.rem_14_config.abi_resolution = REM_14_SENSOR_ABI_RES;
-
-                    position_feedback_config_1.qei_config.index_type  = QEI_SENSOR_INDEX_TYPE;
-                    position_feedback_config_1.qei_config.signal_type = QEI_SENSOR_SIGNAL_TYPE;
-                    position_feedback_config_1.qei_config.port_number = QEI_SENSOR_PORT_NUMBER;
-
-                    position_feedback_config_1.hall_config.port_number = HALL_SENSOR_PORT_NUMBER;
-
-                    //setting second sensor
-                    PositionFeedbackConfig position_feedback_config_2 = position_feedback_config_1;
-                    position_feedback_config_2.sensor_type = 0;
-                    if (SENSOR_2_FUNCTION != SENSOR_FUNCTION_DISABLED) //enable second sensor
+                    par
                     {
                         /* PWM Service */
                         {
@@ -262,7 +183,7 @@ int main(void)
                         {
                             MotorcontrolConfig motorcontrol_config;
 
-                            motorcontrol_config.v_dc =  DC_BUS_VOLTAGE;
+                            motorcontrol_config.dc_bus_voltage =  DC_BUS_VOLTAGE;
                             motorcontrol_config.phases_inverted = MOTOR_PHASES_NORMAL;
                             motorcontrol_config.torque_P_gain =  TORQUE_P_VALUE;
                             motorcontrol_config.torque_I_gain =  TORQUE_I_VALUE;
