@@ -671,7 +671,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                 if (quick_stop_steps == 0) {
                     quick_stop_steps = quick_stop_init(opmode, actual_velocity, sensor_resolution, actual_position, profiler_config);
                 }
-            }
+
 
                 { qs_target, quick_stop_steps_left } = quick_stop_perform(opmode, quick_stop_steps, actual_velocity);
 

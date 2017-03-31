@@ -198,4 +198,4 @@ void init_sdo(client interface i_coe_communication i_coe)
     }
 #endif
 }
-#endif
+
