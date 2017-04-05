@@ -6,6 +6,7 @@
 
 #include <statemachine.h>
 #include <state_modes.h>
+#include <stdio.h>
 #include <motion_control_service.h>
 #include <mc_internal_constants.h>
 
@@ -331,6 +332,7 @@ int8_t update_opmode(int8_t opmode, int8_t opmode_request,
             break;
         }
         i_motion_control.set_position_velocity_control_config(motion_control_config);
+        printf("Switching from opmode %d to opmode %d\n", opmode, opmode_request);
         return opmode_request;
     }
     return opmode;
