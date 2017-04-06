@@ -293,6 +293,7 @@ int get_next_state(int in_state, check_list &checklist, int controlword, int loc
         case S_FAULT:
             ctrl_input = read_controlword_fault_reset(controlword);
             if (ctrl_fault_reset(controlword)) {
+
                 out_state = S_SWITCH_ON_DISABLED;
             } else {
                 out_state = S_FAULT;

@@ -706,10 +706,22 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                 state = get_next_state(state, checklist, controlword, 0);
 
                 if (state == S_SWITCH_ON_DISABLED) {
+                    i_position_control.reset_motorcontrol_faults();
+                    //check if reset worked
+                    delay_milliseconds(500);
+                    send_to_master = i_position_control.update_control_data(send_to_control);
+                    if(send_to_master.error_status == NO_FAULT)
+                    {
+                        printf(">>  FAULT REMOVED\n");
+                    } else {
+                        printf(">>  FAULT ID %i NOT REMOVED!\n");
+                    }
+                    printintln(statusword);
                     CLEAR_BIT(statusword, SW_FAULT_OVER_CURRENT);
                     CLEAR_BIT(statusword, SW_FAULT_UNDER_VOLTAGE);
                     CLEAR_BIT(statusword, SW_FAULT_OVER_VOLTAGE);
                     CLEAR_BIT(statusword, SW_FAULT_OVER_TEMPERATURE);
+                    printintln(statusword);
                 }
                 break;
 
