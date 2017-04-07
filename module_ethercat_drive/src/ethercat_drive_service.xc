@@ -460,6 +460,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         /* tuning pdos */
         tuning_command = pdo_get_tuning_command(InOut); // mode 3, 2 and 1 in tuning command
         tuning_mode_state.value = pdo_get_user_mosi(InOut); // value of tuning command
+        //printf("command1: %3d, value: %d\n", tuning_mode_state.mode_1, tuning_mode_state.value);
 
         /*
         printint(state);
@@ -732,7 +733,8 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
             }
 
         } else if (opmode == OPMODE_SNCN_TUNING) {
-            /* run offset tuning -> this will be called as long as OPMODE_SNCN_TUNING is set */
+            /* run offset tuning -> this will be called as long as OPMODE_SNCN_TUNING is set */\
+           // printf(">>  TUNING MODE ENABLED\n");
             tuning_handler_ethercat(tuning_command,
                     user_miso, tuning_status,
                     tuning_mode_state,

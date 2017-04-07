@@ -1,5 +1,6 @@
 #include <ethercat_service.h>
 #include <pdo_handler.h>
+#include <print.h>
 
 #define MAX_PDO_SIZE 64
 

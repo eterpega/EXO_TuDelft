@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <state_modes.h>
+#include <print.h>
 
 /*
  * Function to call while in tuning opmode
@@ -36,9 +37,10 @@ int tuning_handler_ethercat(
     )
 {
     uint8_t status_mux     = (tuning_status >> 16) & 0xff;
-
+    //printf("Status mux: %u, value:\n", status_mux);
     //mux send offsets and other data in the tuning result pdo using the lower bits of statusword
     status_mux++;
+
     switch(status_mux) {
     case 1: //send offset
         user_miso = motorcontrol_config.commutation_angle_offset;
