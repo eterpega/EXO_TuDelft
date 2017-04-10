@@ -158,6 +158,8 @@ void tuning_command_handler(
     if (tuning_mode_state.mode_1) {
         /* execute command */
         if (tuning_mode_state.mode_1 & TUNING_CMD_SET_PARAM_MASK) { //set parameter commands
+//            printstr("User MOSI:");
+//            printuintln(tuning_mode_state.value);
             switch(tuning_mode_state.mode_1) {
             case TUNING_CMD_POSITION_KP:
                 motion_ctrl_config.position_kp = tuning_mode_state.value;
