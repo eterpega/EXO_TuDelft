@@ -1,6 +1,7 @@
 #include <ethercat_service.h>
 #include <pdo_handler.h>
 #include <print.h>
+#include <stdio.h>
 
 #define MAX_PDO_SIZE 64
 
@@ -26,6 +27,7 @@ int pdo_handler(client interface i_pdo_communication i_pdo, pdo_handler_values_t
         inout.digital_output3 = buffer[23];
         inout.digital_output4 = buffer[24];
         inout.user_mosi = buffer[28] << 24 | buffer[27] << 16 | buffer[26] << 8 | buffer[25];
+//        printf("0x%x %x %x %x\n", buffer[28], buffer[27], buffer[26], buffer[25]);
     }
 
     size_t pdo_count = 0;

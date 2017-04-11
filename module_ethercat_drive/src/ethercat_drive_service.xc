@@ -369,6 +369,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
     uint32_t tuning_command = 0;
     uint32_t tuning_status = 0;
     uint32_t user_miso = 0;
+    uint32_t last_user_mosi = 0;
     TuningModeState tuning_mode_state = {0};
 
     unsigned int time;
@@ -459,7 +460,11 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
 
         /* tuning pdos */
         tuning_command = pdo_get_tuning_command(InOut); // mode 3, 2 and 1 in tuning command
-        tuning_mode_state.value = pdo_get_user_mosi(InOut); // value of tuning command
+        if(last_user_mosi != pdo_get_user_mosi(InOut)) {
+            printf("Mosi changed from %#010x to %#010x\n", last_user_mosi, pdo_get_user_mosi(InOut));
+            last_user_mosi = pdo_get_user_mosi(InOut);
+        }
+        tuning_mode_state.value = last_user_mosi; // value of tuning command
         //printf("command1: %3d, value: %d\n", tuning_mode_state.mode_1, tuning_mode_state.value);
 
         /*
