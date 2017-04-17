@@ -123,7 +123,7 @@ int tuning_handler_ethercat(
 
     /* print command */
     if (tuning_mode_state.mode_1 > 0) {
-        printf("command: %3d, value: %#010x, uvalue: %#010x\n", tuning_mode_state.mode_1, tuning_mode_state.value); // user mosi is een unsigned int
+        printf("command: %3d, value: %d, hexvalue: %#010x\n", tuning_mode_state.mode_1, tuning_mode_state.value, tuning_mode_state.value); // user mosi is een unsigned int
     }
 
     //execute command
