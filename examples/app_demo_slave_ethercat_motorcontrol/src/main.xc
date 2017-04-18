@@ -233,7 +233,7 @@ int main(void)
                             position_feedback_config.offset      = 0;
                             position_feedback_config.sensor_function = SENSOR_1_FUNCTION;
 
-                            position_feedback_config.ssi_config.timeout = 19*IFM_TILE_USEC;
+                            position_feedback_config.ssi_config.timeout = SSI_TIMEOUT;
 
                             position_feedback_config.biss_config.multiturn_resolution = BISS_MULTITURN_RESOLUTION;
                             position_feedback_config.biss_config.filling_bits = BISS_FILLING_BITS;
