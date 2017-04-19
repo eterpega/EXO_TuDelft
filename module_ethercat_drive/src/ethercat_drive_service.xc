@@ -526,6 +526,8 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
             int error_code = get_cia402_error_code(fault);
             i_coe.set_object_value(DICT_ERROR_CODE, 0, error_code);
             pdo_set_error_code(error_code, InOut);
+        } else {
+            pdo_set_error_code(72, InOut);
         }
 
         follow_error = target_position - actual_position; /* FIXME only relevant in OP_ENABLED - used for what??? */

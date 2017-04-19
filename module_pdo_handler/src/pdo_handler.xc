@@ -81,7 +81,7 @@ int pdo_handler(client interface i_pdo_communication i_pdo, pdo_handler_values_t
         buffer[45] = inout.error_code;
         buffer[46] = inout.error_code >> 8;
 
-        pdo_count = 45;
+        pdo_count = 47;
         i_pdo.set_pdos_value(buffer, pdo_count);
     }
 
@@ -241,5 +241,4 @@ void pdo_set_timestamp(uint32_t value, pdo_handler_values_t &InOut)
 void pdo_set_error_code(uint16_t value, pdo_handler_values_t &InOut)
 {
     InOut.error_code = value;
-}
 }
