@@ -80,8 +80,12 @@ int pdo_handler(client interface i_pdo_communication i_pdo, pdo_handler_values_t
         buffer[44] = inout.timestamp >> 24;
         buffer[45] = inout.error_code;
         buffer[46] = inout.error_code >> 8;
+        buffer[47] = inout.phase_b_current;
+        buffer[48] = inout.phase_b_current >> 8;
+        buffer[49] = inout.phase_c_current;
+        buffer[50] = inout.phase_c_current >> 8;
 
-        pdo_count = 47;
+        pdo_count = 51;
         i_pdo.set_pdos_value(buffer, pdo_count);
     }
 

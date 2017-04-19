@@ -39,6 +39,8 @@ typedef struct
     uint32_t user_miso;
     uint32_t timestamp;
     uint16_t error_code;
+    int16_t phase_b_current;
+    int16_t phase_c_current;
 } pdo_handler_values_t;
 
 int pdo_handler(client interface i_pdo_communication i_pdo, pdo_handler_values_t &InOut);

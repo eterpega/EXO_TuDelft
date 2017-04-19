@@ -326,7 +326,8 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                             client interface MotorControlInterface i_motorcontrol,
                             client interface PositionVelocityCtrlInterface i_position_control,
                             client interface PositionFeedbackInterface i_position_feedback_1,
-                            client interface PositionFeedbackInterface ?i_position_feedback_2)
+                            client interface PositionFeedbackInterface ?i_position_feedback_2,
+                            client interface ADCInterface i_adc)
 {
     int quick_stop_steps = 0;
     int quick_stop_steps_left = 0;
@@ -549,6 +550,11 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         pdo_set_tuning_status(tuning_status, InOut);
         pdo_set_user_miso(user_miso, InOut);
         pdo_set_timestamp(time/100, InOut);
+
+        int phaseB, phaseC;
+        {phaseB, phaseC, void, void, void, void, void, void, void, void} = i_adc.get_all_measurements();
+        InOut.phase_b_current = phaseB;
+        InOut.phase_c_current = phaseC;
 
 //        xscope_int(ACTUAL_VELOCITY, actual_velocity);
 //        xscope_int(ACTUAL_POSITION, actual_position);
