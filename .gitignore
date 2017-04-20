@@ -4,7 +4,7 @@
 
 # Libraries
 
-*.a
+
 
 # Shared objects (inc. Windows DLLs)
 *.dll
@@ -32,7 +32,7 @@ xscope.xmt
 ## and binary stuff ...
 .build_*
 *.d
-*.a
+
 *.so
 *.xe
 *.o
