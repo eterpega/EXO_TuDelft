@@ -158,7 +158,7 @@ void tuning_command_handler(
     if (tuning_mode_state.mode_1) {
         /* execute command */
         if (tuning_mode_state.mode_1 & TUNING_CMD_SET_PARAM_MASK) { //set parameter commands
-//            printstr("User MOSI:");
+//            printstr("Tuning mode");
 //            printuintln(tuning_mode_state.value);
             switch(tuning_mode_state.mode_1) {
             case TUNING_CMD_POSITION_KP:
@@ -199,6 +199,7 @@ void tuning_command_handler(
                 motion_ctrl_config.max_motor_speed = tuning_mode_state.value;
                 break;
             case TUNING_CMD_MAX_POSITION:
+                printf("Setting new max position: [%d]",tuning_mode_state.value);
                 motion_ctrl_config.max_pos_range_limit = tuning_mode_state.value;
                 break;
             case TUNING_CMD_MIN_POSITION:

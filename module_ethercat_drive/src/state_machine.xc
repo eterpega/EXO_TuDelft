@@ -109,7 +109,16 @@ check_list init_checklist(void)
 
 void update_checklist(check_list &check_list_param, int mode, int fault)
 {
-    check_list_param.fault = fault;
+    switch(fault) {
+        case MAX_TARGET_POSITION_EXCEEDED:
+        case MIN_TARGET_POSITION_EXCEEDED:
+        case NO_FAULT:
+            check_list_param.fault = false; // this is a non-fatal fault, so we don't want to trigger a faultreaction
+            break;
+        default:
+            check_list_param.fault = true;
+            break;
+    }
 }
 
 

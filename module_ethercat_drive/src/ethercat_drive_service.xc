@@ -59,6 +59,18 @@ static int get_cia402_error_code(FaultCode fault)
         error_code = ERROR_CODE_EXCESS_TEMPEATUR_DEVICE;
         break;
 #endif
+    case MAX_TARGET_POSITION_EXCEEDED:
+        error_code = ERROR_CODE_MAX_TARGET_POSITION_EXCEEDED;
+        break;
+    case MIN_TARGET_POSITION_EXCEEDED:
+        error_code = ERROR_CODE_MIN_TARGET_POSITION_EXCEEDED;
+        break;
+    case MAX_POSITION_EXCEEDED:
+        error_code = ERROR_CODE_MAX_ACTUAL_POSITION_EXCEEDED;
+        break;
+    case MIN_POSITION_EXCEEDED:
+        error_code = ERROR_CODE_MIN_ACTUAL_POSITION_EXCEEDED;
+        break;
     default: /* a fault occured but could not be specified further */
         error_code = ERROR_CODE_CONTROL;
         break;
@@ -512,7 +524,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
          * Fault signaling to the master in the manufacturer specifc bit in the the statusword
          */
         if (fault != NO_FAULT) {
-            update_checklist(checklist, opmode, 1);
+            update_checklist(checklist, opmode, fault);
             if (fault == DEVICE_INTERNAL_CONTINOUS_OVER_CURRENT_NO_1) {
                 SET_BIT(statusword, SW_FAULT_OVER_CURRENT);
             } else if (fault == UNDER_VOLTAGE_NO_1) {
@@ -528,7 +540,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
             i_coe.set_object_value(DICT_ERROR_CODE, 0, error_code);
             pdo_set_error_code(error_code, InOut);
         } else {
-            pdo_set_error_code(72, InOut);
+            pdo_set_error_code(72, InOut); // 72 != 0, so you see the difference between no error and not connected
         }
 
         follow_error = target_position - actual_position; /* FIXME only relevant in OP_ENABLED - used for what??? */
