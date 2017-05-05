@@ -49,8 +49,9 @@ int tuning_handler_ethercat(
         user_miso = motorcontrol_config.pole_pairs;
         break;
     case 3: //target
-        switch(tuning_mode_state.motorctrl_status) {
-        case TUNING_MOTORCTRL_TORQUE:
+//        switch(tuning_mode_state.motorctrl_status) {
+        user_miso = 72;
+        /*case TUNING_MOTORCTRL_TORQUE:
             user_miso = downstream_control_data.torque_cmd;
             break;
         case TUNING_MOTORCTRL_VELOCITY:
@@ -60,7 +61,7 @@ int tuning_handler_ethercat(
         case TUNING_MOTORCTRL_POSITION_PROFILER:
             user_miso = downstream_control_data.position_cmd;
             break;
-        }
+        }*/
         break;
     case 4: //position limit min
         user_miso = motion_ctrl_config.min_pos_range_limit;
@@ -123,7 +124,7 @@ int tuning_handler_ethercat(
 
     /* print command */
     if (tuning_mode_state.mode_1 > 0) {
-        printf("command: %3d, value: %d, hexvalue: %#010x\n", tuning_mode_state.mode_1, tuning_mode_state.value, tuning_mode_state.value); // user mosi is een unsigned int
+//        printf("command: %3d, value: %d, hexvalue: %#010x\n", tuning_mode_state.mode_1, tuning_mode_state.value, tuning_mode_state.value); // user mosi is een unsigned int
     }
 
     //execute command
@@ -199,7 +200,6 @@ void tuning_command_handler(
                 motion_ctrl_config.max_motor_speed = tuning_mode_state.value;
                 break;
             case TUNING_CMD_MAX_POSITION:
-                printf("Setting new max position: [%d]",tuning_mode_state.value);
                 motion_ctrl_config.max_pos_range_limit = tuning_mode_state.value;
                 break;
             case TUNING_CMD_MIN_POSITION:

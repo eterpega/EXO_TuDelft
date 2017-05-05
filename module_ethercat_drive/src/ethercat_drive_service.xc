@@ -356,6 +356,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
     int actual_position = 0;
     int update_position_velocity = 0;
     int follow_error = 0;
+    uint16_t last_statusword = 0;
     //int target_position_progress = 0; /* is current target_position necessary to remember??? */
 
     enum eDirection direction = DIRECTION_NEUTRAL;
@@ -365,7 +366,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
 
     int opmode = OPMODE_NONE;
     int opmode_request = OPMODE_NONE;
-
+    int last_opmode = 0;
     MotionControlConfig position_velocity_config = i_position_control.get_position_velocity_control_config();
 
     pdo_handler_values_t InOut = { 0 };
@@ -467,6 +468,11 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         target_velocity = pdo_get_target_velocity(InOut);
         target_torque   = pdo_get_target_torque(InOut);
         send_to_control.offset_torque = pdo_get_offset_torque(InOut); /* FIXME send this to the controll */
+        if(last_opmode != opmode_request){
+            printf("New opmode requested\n");
+                    printintln(opmode_request);
+                }
+        last_opmode = opmode_request;
         /* FIXME removed! what is the next way to do it?
         update_position_velocity = pdo_get_command_pid_update(InOut); // Update trigger which PID setting should be updated now
          */
@@ -474,7 +480,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         /* tuning pdos */
         tuning_command = pdo_get_tuning_command(InOut); // mode 3, 2 and 1 in tuning command
         if(last_user_mosi != pdo_get_user_mosi(InOut)) {
-            printf("Mosi changed from %d to %d, (%#010x to %#010x)\n", last_user_mosi, pdo_get_user_mosi(InOut), last_user_mosi, pdo_get_user_mosi(InOut));
+//            printf("Mosi changed from %d to %d, (%#010x to %#010x)\n", last_user_mosi, pdo_get_user_mosi(InOut), last_user_mosi, pdo_get_user_mosi(InOut));
             last_user_mosi = pdo_get_user_mosi(InOut);
         }
         tuning_mode_state.value = last_user_mosi; // value of tuning command
@@ -550,6 +556,11 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         /*
          *  update values to send
          */
+        if(last_statusword != statusword){
+            printintln(statusword);
+        }
+        last_statusword = statusword;
+
         pdo_set_statusword(statusword, InOut);
         pdo_set_op_mode_display(opmode, InOut);
         pdo_set_velocity_value(actual_velocity, InOut);
