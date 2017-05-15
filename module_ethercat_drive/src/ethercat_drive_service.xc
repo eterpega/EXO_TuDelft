@@ -400,6 +400,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
 
     int limit_switch_type;
     int homing_method;
+    int temperature;
 
     int sensor_resolution = 0;
     uint8_t polarity = 0;
@@ -575,9 +576,10 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         pdo_set_timestamp(time/100, InOut);
 
         int phaseB, phaseC;
-        {phaseB, phaseC, void, void, void, void, void, void, void, void} = i_adc.get_all_measurements();
+        {phaseB, phaseC, void, void, temperature, void, void, void, void, void} = i_adc.get_all_measurements();
         InOut.phase_b_current = phaseB;
         InOut.phase_c_current = phaseC;
+        pdo_set_core_temp(temperature,InOut);
 
 //        xscope_int(ACTUAL_VELOCITY, actual_velocity);
 //        xscope_int(ACTUAL_POSITION, actual_position);

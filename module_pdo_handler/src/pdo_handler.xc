@@ -84,8 +84,10 @@ int pdo_handler(client interface i_pdo_communication i_pdo, pdo_handler_values_t
         buffer[48] = inout.phase_b_current >> 8;
         buffer[49] = inout.phase_c_current;
         buffer[50] = inout.phase_c_current >> 8;
+        buffer[51] = inout.core_temp;
+        buffer[51] = inout.core_temp >> 8;
 
-        pdo_count = 51;
+        pdo_count = 52;
         i_pdo.set_pdos_value(buffer, pdo_count);
     }
 
@@ -245,4 +247,9 @@ void pdo_set_timestamp(uint32_t value, pdo_handler_values_t &InOut)
 void pdo_set_error_code(uint16_t value, pdo_handler_values_t &InOut)
 {
     InOut.error_code = value;
+}
+
+void pdo_set_core_temp(uint16_t value, pdo_handler_values_t &InOut)
+{
+    InOut.core_temperature = value;
 }
