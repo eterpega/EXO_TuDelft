@@ -123,7 +123,7 @@ int main(void)
                     motion_ctrl_config.max_acceleration_profiler =            MAX_ACCELERATION_PROFILER;
                     motion_ctrl_config.max_speed_profiler =                   MAX_SPEED_PROFILER;
 
-                    motion_ctrl_config.position_control_strategy =                     NL_POSITION_CONTROLLER;
+                    motion_ctrl_config.position_control_strategy =                     POS_PID_CONTROLLER;
 
                     motion_ctrl_config.position_kp =                                POSITION_Kp;
                     motion_ctrl_config.position_ki =                                POSITION_Ki;
