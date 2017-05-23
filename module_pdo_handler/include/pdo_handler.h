@@ -38,6 +38,10 @@ typedef struct
     uint8_t digital_input4;
     uint32_t user_miso;
     uint32_t timestamp;
+    uint16_t error_code;
+    int16_t phase_b_current;
+    int16_t phase_c_current;
+    //TODO add torque value and sensor error
 } pdo_handler_values_t;
 
 int pdo_handler(client interface i_pdo_communication i_pdo, pdo_handler_values_t &InOut);
@@ -101,3 +105,9 @@ void pdo_set_digital_input4(uint8_t value, pdo_handler_values_t &InOut);
 void pdo_set_user_miso(uint32_t value, pdo_handler_values_t &InOut);
 
 void pdo_set_timestamp(uint32_t value, pdo_handler_values_t &InOut);
+
+void pdo_set_error_code(uint16_t value, pdo_handler_values_t &InOut);
+
+void pdo_set_phase_b_current(int16_t value, pdo_handler_values_t &InOut);
+
+void pdo_set_phase_c_current(int16_t value, pdo_handler_values_t &InOut);
