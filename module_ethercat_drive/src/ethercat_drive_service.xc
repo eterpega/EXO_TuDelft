@@ -18,7 +18,6 @@
 #include <profile_control.h>
 #include <xscope.h>
 #include <tuning.h>
-#include <print.h>
 
 /* FIXME move to some stdlib */
 #define ABSOLUTE_VALUE(x)   (x < 0 ? -x : x)
@@ -383,6 +382,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
     uint32_t tuning_command = 0;
     uint32_t tuning_status = 0;
     uint32_t user_miso = 0;
+    uint32_t last_user_mosi = 0;
     TuningModeState tuning_mode_state = {0};
 
     unsigned int time;
@@ -492,6 +492,9 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
 
         /* tuning pdos */
         tuning_command = pdo_get_tuning_command(InOut); // mode 3, 2 and 1 in tuning command
+        if(last_user_mosi != pdo_get_user_mosi(InOut)){
+            last_user_mosi = pdo_get_user_mosi(InOut);
+        }
         tuning_mode_state.value = pdo_get_user_mosi(InOut); // value of tuning command
 
         /*
@@ -637,7 +640,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         /*
          * new, perform actions according to state
          */
-//        debug_print_state(state);
+        debug_print_state(state);
 
         if (opmode == OPMODE_NONE) {
             statusword      = update_statusword(statusword, state, 0, 0, 0); /* FiXME update ack, q_active and shutdown_ack */
@@ -671,6 +674,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
             switch (state) {
             case S_NOT_READY_TO_SWITCH_ON:
                 /* internal stuff, automatic transition (1) to next state */
+
                 state = get_next_state(state, checklist, 0, 0);
                 break;
 

@@ -238,12 +238,12 @@ int main(void)
                     position_feedback_config_1.offset      = HOME_OFFSET;
                     position_feedback_config_1.sensor_function = SENSOR_1_FUNCTION;
 
-                    position_feedback_config_1.ssi_config.timeout = SSI_TIMEOUT; //timeout in micro seconds
-                    position_feedback_config_1.ssi_config.bit_resolution = SSI_BIT_RESOLUTION;
-                    position_feedback_config_1.ssi_config.tick_resolution = SSI_SENSOR_RESOLUTION;
-                    position_feedback_config_1.ssi_config.port_config = GPIO;
-                    position_feedback_config_1.ssi_config.clk_port = SSI_CLOCK_PORT_EXT_D0;
-                    position_feedback_config_1.ssi_config.data_port = SSI_CLOCK_PORT_EXT_D1;
+                    position_feedback_config_1.ssi_config.timeout           = SSI_TIMEOUT;
+                    position_feedback_config_1.ssi_config.bit_resolution    = SSI_BIT_RESOLUTION;
+                    position_feedback_config_1.ssi_config.tick_resolution   = SSI_SENSOR_RESOLUTION;
+                    position_feedback_config_1.ssi_config.port_config       = GPIO;
+                    position_feedback_config_1.ssi_config.clk_port          = SSI_CLOCK_PORT_EXT_D0;
+                    position_feedback_config_1.ssi_config.data_port         = SSI_CLOCK_PORT_EXT_D1;
 
                     position_feedback_config_1.biss_config.multiturn_resolution = BISS_MULTITURN_RESOLUTION;
                     position_feedback_config_1.biss_config.filling_bits = BISS_FILLING_BITS;

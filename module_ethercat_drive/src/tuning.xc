@@ -148,40 +148,52 @@ void tuning_command_handler(
     if (tuning_mode_state.command & TUNING_CMD_SET_PARAM_MASK) { //set parameter commands
         switch(tuning_mode_state.command) {
         case TUNING_CMD_POSITION_KP:
+            printf("Setting new position kp: [%d]", tuning_mode_state.value);
             motion_ctrl_config.position_kp = tuning_mode_state.value;
             break;
         case TUNING_CMD_POSITION_KI:
+            printf("Setting new position ki: [%d]", tuning_mode_state.value);
             motion_ctrl_config.position_ki = tuning_mode_state.value;
             break;
         case TUNING_CMD_POSITION_KD:
+            printf("Setting new position kd: [%d]", tuning_mode_state.value);
             motion_ctrl_config.position_kd = tuning_mode_state.value;
             break;
         case TUNING_CMD_POSITION_I_LIM:
+            printf("Setting new position I_lim: [%d]", tuning_mode_state.value);
             motion_ctrl_config.position_integral_limit = tuning_mode_state.value;
             break;
         case TUNING_CMD_MOMENT_INERTIA:
+            printf("Setting new moment of Inertia: [%d]", tuning_mode_state.value);
             motion_ctrl_config.moment_of_inertia = tuning_mode_state.value;
             break;
         case TUNING_CMD_POSITION_PROFILER:
+            printf("Setting new position profiler: [%d]", tuning_mode_state.value);
             motion_ctrl_config.enable_profiler = tuning_mode_state.value;
             break;
         case TUNING_CMD_VELOCITY_KP:
+            printf("Setting new velocity kp: [%d]", tuning_mode_state.value);
             motion_ctrl_config.velocity_kp = tuning_mode_state.value;
             break;
         case TUNING_CMD_VELOCITY_KI:
+            printf("Setting new velocity ki: [%d]", tuning_mode_state.value);
             motion_ctrl_config.velocity_ki = tuning_mode_state.value;
             break;
         case TUNING_CMD_VELOCITY_KD:
+            printf("Setting new velocity kd: [%d]", tuning_mode_state.value);
             motion_ctrl_config.velocity_kd = tuning_mode_state.value;
             break;
         case TUNING_CMD_VELOCITY_I_LIM:
+            printf("Setting new velocity I_lim: [%d]", tuning_mode_state.value);
             motion_ctrl_config.velocity_integral_limit = tuning_mode_state.value;
             break;
         case TUNING_CMD_MAX_TORQUE:
+            printf("Setting new max torque: [%d]", tuning_mode_state.value);
             motion_ctrl_config.max_torque = (tuning_mode_state.value*motorcontrol_config.rated_torque)/1000;
             motorcontrol_config.max_torque = motion_ctrl_config.max_torque;
             break;
         case TUNING_CMD_MAX_SPEED:
+            printf("Setting new max speed: [%d]", tuning_mode_state.value);
             motion_ctrl_config.max_motor_speed = tuning_mode_state.value;
             break;
         case TUNING_CMD_MAX_POSITION:
@@ -190,15 +202,19 @@ void tuning_command_handler(
             motion_ctrl_config.max_pos_range_limit = tuning_mode_state.value;
             break;
         case TUNING_CMD_MIN_POSITION:
+            printf("Setting new min position: [%d]", tuning_mode_state.value);
             motion_ctrl_config.min_pos_range_limit = tuning_mode_state.value;
             break;
         case TUNING_CMD_BRAKE_RELEASE_STRATEGY:
+            printf("Setting new brake realease strategy: [%d]", tuning_mode_state.value);
             motion_ctrl_config.brake_release_strategy = tuning_mode_state.value;
             break;
         case TUNING_CMD_POLARITY_MOTION:
+            printstrln("Tuning Polarity Motion... ");
             motion_ctrl_config.polarity = tuning_mode_state.value;
             break;
         case TUNING_CMD_POLARITY_SENSOR:
+            printf("Setting new polarity sensorn: [%d]", tuning_mode_state.value);
             if (sensor_commutation == 2) {
                 if (!isnull(i_position_feedback_2)) {
                     pos_feedback_config_2.polarity = tuning_mode_state.value;
@@ -212,6 +228,7 @@ void tuning_command_handler(
             }
             break;
         case TUNING_CMD_POLE_PAIRS:
+            printf("Setting new pole pairs: [%d]", tuning_mode_state.value);
             if (tuning_mode_state.value > 0) {
                 if (sensor_commutation == 2) {
                     if (!isnull(i_position_feedback_2)) {
@@ -228,9 +245,11 @@ void tuning_command_handler(
             }
             break;
         case TUNING_CMD_OFFSET:
+            printf("Setting new offset: [%d]", tuning_mode_state.value);
             motorcontrol_config.commutation_angle_offset = tuning_mode_state.value;
             break;
         case TUNING_CMD_PHASES_INVERTED:
+            printf("Setting new phases inverted: [%d]", tuning_mode_state.value);
             if (tuning_mode_state.value) {
                 motorcontrol_config.phases_inverted = MOTOR_PHASES_INVERTED;
             } else {
@@ -238,6 +257,7 @@ void tuning_command_handler(
             }
             break;
         case TUNING_CMD_RATED_TORQUE:
+            printf("Setting new rated torque: [%d]", tuning_mode_state.value);
             motorcontrol_config.rated_torque = tuning_mode_state.value;
             break;
         }
@@ -256,6 +276,7 @@ void tuning_command_handler(
 
         switch(tuning_mode_state.command) {
         case TUNING_CMD_CONTROL_DISABLE:
+            printf("Setting control disable : [%d]", tuning_mode_state.value);
             i_motion_control.disable();
             tuning_mode_state.brake_flag = 0;
             tuning_mode_state.motorctrl_status = TUNING_MOTORCTRL_OFF;
@@ -264,6 +285,7 @@ void tuning_command_handler(
 
         case TUNING_CMD_CONTROL_POSITION://select control mode
             //select control mode
+            printf("Setting new position control mode : [%d]", tuning_mode_state.value);
             int position_control_strategy = motion_ctrl_config.position_control_strategy;
             switch(tuning_mode_state.value) {
             case 1:
@@ -295,6 +317,7 @@ void tuning_command_handler(
 
 
         case TUNING_CMD_CONTROL_VELOCITY:
+            printf("Setting new velocity control: [%d]", tuning_mode_state.value);
             i_motion_control.enable_velocity_ctrl();
             tuning_mode_state.motorctrl_status = TUNING_MOTORCTRL_VELOCITY;
             tuning_mode_state.brake_flag = 1;
@@ -302,6 +325,7 @@ void tuning_command_handler(
 
 
         case TUNING_CMD_CONTROL_TORQUE:
+            printf("Setting new torque control: [%d]", tuning_mode_state.value);
             i_motion_control.enable_torque_ctrl();
             tuning_mode_state.motorctrl_status = TUNING_MOTORCTRL_TORQUE;
             tuning_mode_state.brake_flag = 1;
@@ -310,6 +334,7 @@ void tuning_command_handler(
 
         //auto offset tuning
         case TUNING_CMD_AUTO_OFFSET:
+            printstr("Auto tuning... \n");
             tuning_mode_state.motorctrl_status = TUNING_MOTORCTRL_OFF;
             tuning_mode_state.brake_flag = 0;
             motorcontrol_config = i_motion_control.set_offset_detection_enabled();
@@ -317,6 +342,7 @@ void tuning_command_handler(
 
         //set brake
         case TUNING_CMD_BRAKE:
+            printf("Setting new brake: [%d]", tuning_mode_state.value);
             if (tuning_mode_state.value == 1 || tuning_mode_state.value == 0) {
                 i_motion_control.set_brake_status(tuning_mode_state.value);
                 tuning_mode_state.brake_flag = tuning_mode_state.value;
@@ -324,6 +350,7 @@ void tuning_command_handler(
             break;
 
         case TUNING_CMD_SAFE_TORQUE:
+            printf("Setting new safe torque: [%d]", tuning_mode_state.value);
             tuning_mode_state.brake_flag = 0;
             tuning_mode_state.motorctrl_status = TUNING_MOTORCTRL_OFF;
             i_motion_control.set_safe_torque_off_enabled();
@@ -331,6 +358,7 @@ void tuning_command_handler(
 
         //fault reset
         case TUNING_CMD_FAULT_RESET:
+            printf("Resetting Fault...");
             i_motion_control.disable();
             tuning_mode_state.brake_flag = 0;
             tuning_mode_state.motorctrl_status = TUNING_MOTORCTRL_OFF;
@@ -339,6 +367,7 @@ void tuning_command_handler(
 
         //set zero position
         case TUNING_CMD_ZERO_POSITION:
+            printf("Setting new zero position: [%d]", tuning_mode_state.value);
             if (sensor_motion_control == 2) {
                 if (!isnull(i_position_feedback_2)) {
                     i_position_feedback_2.send_command(REM_16MT_CONF_NULL, 0, 0);
@@ -356,6 +385,7 @@ void tuning_command_handler(
 
         //set multiturn value (does not change offset)
         case TUNING_CMD_SET_MULTITURN:
+            printf("Setting new multiturn: [%d]", tuning_mode_state.value);
             if (sensor_motion_control == 2) {
                 if (!isnull(i_position_feedback_2)) {
                     i_position_feedback_2.send_command(REM_16MT_CONF_MTPRESET, tuning_mode_state.value, 16);
