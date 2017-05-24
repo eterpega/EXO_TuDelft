@@ -24,3 +24,9 @@
 
 /* for all error in this control which could not further specified */
 #define ERROR_CODE_CONTROL                          0x8A00
+
+// custom errors for MARCH II
+#define ERROR_CODE_MAX_TARGET_POSITION_EXCEEDED     0x8B01
+#define ERROR_CODE_MIN_TARGET_POSITION_EXCEEDED     0x8B02
+#define ERROR_CODE_MAX_ACTUAL_POSITION_EXCEEDED     0x8B03
+#define ERROR_CODE_MIN_ACTUAL_POSITION_EXCEEDED     0x8B04

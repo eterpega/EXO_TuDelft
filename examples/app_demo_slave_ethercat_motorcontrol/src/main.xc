@@ -1,7 +1,7 @@
 /* INCLUDE BOARD SUPPORT FILES FROM module_board-support */
 #include <COM_ECAT-rev-a.bsp>
 #include <CORE_C22-rev-a.bsp>
-#include <IFM_BOARD_REQUIRED>
+#include <IFM_DC1K-rev-c4.bsp>
 
 /**
  * @file test_ethercat-mode.xc
@@ -101,7 +101,7 @@ int main(void)
             ethercat_drive_service( profiler_config,
                                     i_pdo, i_coe,
                                     i_torque_control[1],
-                                    i_motion_control[0], i_position_feedback_1[0], i_position_feedback_2[0]);
+                                    i_motion_control[0], i_position_feedback_1[0], i_position_feedback_2[0], i_adc[1]);
 #endif
         }
 
@@ -237,6 +237,13 @@ int main(void)
                     position_feedback_config_1.max_ticks   = SENSOR_MAX_TICKS;
                     position_feedback_config_1.offset      = HOME_OFFSET;
                     position_feedback_config_1.sensor_function = SENSOR_1_FUNCTION;
+
+                    position_feedback_config_1.ssi_config.timeout = SSI_TIMEOUT; //timeout in micro seconds
+                    position_feedback_config_1.ssi_config.bit_resolution = SSI_BIT_RESOLUTION;
+                    position_feedback_config_1.ssi_config.tick_resolution = SSI_SENSOR_RESOLUTION;
+                    position_feedback_config_1.ssi_config.port_config = GPIO;
+                    position_feedback_config_1.ssi_config.clk_port = SSI_CLOCK_PORT_EXT_D0;
+                    position_feedback_config_1.ssi_config.data_port = SSI_CLOCK_PORT_EXT_D1;
 
                     position_feedback_config_1.biss_config.multiturn_resolution = BISS_MULTITURN_RESOLUTION;
                     position_feedback_config_1.biss_config.filling_bits = BISS_FILLING_BITS;

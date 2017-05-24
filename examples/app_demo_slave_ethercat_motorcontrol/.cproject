@@ -305,6 +305,9 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_reboot}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_board-support/targets}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_reboot/doc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_ssi/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_ssi/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_ssi}&quot;"/>
 								</option>
 								<inputType id="com.xmos.cdt.xc.compiler.input.486157097" name="XC" superClass="com.xmos.cdt.xc.compiler.input"/>
 							</tool>
@@ -738,6 +741,9 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_reboot}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_board-support/targets}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_reboot/doc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_ssi/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_ssi/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_ssi}&quot;"/>
 								</option>
 								<inputType id="com.xmos.cdt.c.compiler.input.c.431923164" name="C" superClass="com.xmos.cdt.c.compiler.input.c"/>
 							</tool>
@@ -1176,6 +1182,9 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_reboot}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_board-support/targets}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_reboot/doc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_ssi/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_ssi/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_ssi}&quot;"/>
 								</option>
 								<inputType id="com.xmos.cdt.cxx.compiler.input.cpp.1677795949" name="C++" superClass="com.xmos.cdt.cxx.compiler.input.cpp"/>
 							</tool>
@@ -1993,4 +2002,5 @@
 		<project id="app_demo_slave_ethercat_motorcontrol.null.1511958752" name="app_demo_slave_ethercat_motorcontrol"/>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
+	<storageModule moduleId="refreshScope"/>
 </cproject>

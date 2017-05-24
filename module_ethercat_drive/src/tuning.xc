@@ -185,6 +185,8 @@ void tuning_command_handler(
             motion_ctrl_config.max_motor_speed = tuning_mode_state.value;
             break;
         case TUNING_CMD_MAX_POSITION:
+        case NO_FAULT:
+            printf("Setting new max position: [%d]", tuning_mode_state.value);
             motion_ctrl_config.max_pos_range_limit = tuning_mode_state.value;
             break;
         case TUNING_CMD_MIN_POSITION:

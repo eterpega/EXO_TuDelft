@@ -18,6 +18,7 @@
 #include <profile_control.h>
 #include <xscope.h>
 #include <tuning.h>
+#include <print.h>
 
 /* FIXME move to some stdlib */
 #define ABSOLUTE_VALUE(x)   (x < 0 ? -x : x)
@@ -56,6 +57,18 @@ static int get_cia402_error_code(FaultCode motorcontrol_fault, SensorError motio
         break;
     case EXCESS_TEMPERATURE_DRIVE:
         error_code = ERROR_CODE_EXCESS_TEMPERATURE_DEVICE;
+        break;
+    case MAX_TARGET_POSITION_EXCEEDED:
+        error_code = ERROR_CODE_MAX_TARGET_POSITION_EXCEEDED;
+        break;
+    case MIN_TARGET_POSITION_EXCEEDED:
+        error_code = ERROR_CODE_MIN_TARGET_POSITION_EXCEEDED;
+        break;
+    case MAX_POSITION_EXCEEDED:
+        error_code = ERROR_CODE_MAX_ACTUAL_POSITION_EXCEEDED;
+        break;
+    case MIN_POSITION_EXCEEDED:
+        error_code = ERROR_CODE_MIN_ACTUAL_POSITION_EXCEEDED;
         break;
     case NO_FAULT:
         /* if there is no motorcontrol fault check sensor fault
@@ -323,7 +336,8 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                             client interface TorqueControlInterface i_torque_control,
                             client interface MotionControlInterface i_motion_control,
                             client interface PositionFeedbackInterface i_position_feedback_1,
-                            client interface PositionFeedbackInterface ?i_position_feedback_2)
+                            client interface PositionFeedbackInterface ?i_position_feedback_2,
+                            client interface ADCInterface i_adc)
 {
 
     //int target_torque = 0; /* used for CST */
@@ -340,6 +354,8 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
     int actual_velocity = 0;
     int actual_position = 0;
     int follow_error = 0;
+    uint16_t last_statusword = 0;
+
     //int target_position_progress = 0; /* is current target_position necessary to remember??? */
 
     enum eDirection direction = DIRECTION_NEUTRAL;
@@ -349,6 +365,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
 
     int opmode = OPMODE_NONE;
     int opmode_request = OPMODE_NONE;
+    int last_opmode = 0;
 
     MotionControlConfig motion_control_config = i_motion_control.get_motion_control_config();
 
@@ -467,6 +484,11 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         target_velocity = pdo_get_target_velocity(InOut);
         target_torque   = (pdo_get_target_torque(InOut)*motorcontrol_config.rated_torque) / 1000; //target torque received in 1/1000 of rated torque
         send_to_control.offset_torque = pdo_get_offset_torque(InOut); /* FIXME send this to the controll */
+        if(last_opmode != opmode_request){
+            printf("New opmode requested: \n");
+            printintln(opmode_request);
+        }
+        last_opmode = opmode_request;
 
         /* tuning pdos */
         tuning_command = pdo_get_tuning_command(InOut); // mode 3, 2 and 1 in tuning command
@@ -533,7 +555,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                 motion_sensor_error != SENSOR_NO_ERROR || commutation_sensor_error != SENSOR_NO_ERROR ||
                 motion_control_error != MOTION_CONTROL_NO_ERROR)
         {
-            update_checklist(checklist, opmode, 1);
+            update_checklist(checklist, opmode, motorcontrol_fault);
             if (motorcontrol_fault == DEVICE_INTERNAL_CONTINOUS_OVER_CURRENT_NO_1) {
                 SET_BIT(statusword, SW_FAULT_OVER_CURRENT);
             } else if (motorcontrol_fault == UNDER_VOLTAGE_NO_1) {
@@ -547,8 +569,10 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
             /* Write error code to object dictionary */
             int error_code = get_cia402_error_code(motorcontrol_fault, motion_sensor_error, commutation_sensor_error, motion_control_error);
             i_coe.set_object_value(DICT_ERROR_CODE, 0, error_code);
+            pdo_set_error_code(error_code, InOut);
         } else {
             update_checklist(checklist, opmode, 0); //no error
+            pdo_set_error_code(72, InOut); //72 != 0, so you see the difference between no error and not connected
         }
 
         follow_error = target_position - actual_position; /* FIXME only relevant in OP_ENABLED - used for what??? */
@@ -558,6 +582,14 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         /*
          *  update values to send
          */
+        if(last_statusword != statusword){
+            printintln(statusword);
+        }
+        last_statusword = statusword;
+
+        int phaseB, phaseC;
+        {phaseB, phaseC, void, void, void, void, void, void, void, void} = i_adc.get_all_measurements();
+
         pdo_set_statusword(statusword, InOut);
         pdo_set_op_mode_display(opmode, InOut);
         pdo_set_velocity_value(actual_velocity, InOut);
@@ -570,6 +602,11 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         pdo_set_tuning_status(tuning_status, InOut);
         pdo_set_user_miso(user_miso, InOut);
         pdo_set_timestamp(send_to_master.sensor_timestamp, InOut);
+
+        pdo_set_phase_b_current(phaseB, InOut);
+        pdo_set_phase_c_current(phaseC, InOut);
+
+        //printintln(send_to_master.secondary_position);
 
 //        xscope_int(ACTUAL_VELOCITY, actual_velocity);
 //        xscope_int(ACTUAL_POSITION, actual_position);
