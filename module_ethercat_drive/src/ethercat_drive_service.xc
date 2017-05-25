@@ -587,7 +587,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
          *  update values to send
          */
         if(last_statusword != statusword){
-            printf("Status: %04X",statusword);
+            printf("Status: %#04X, %d\n",statusword,statusword);
         }
         last_statusword = statusword;
 

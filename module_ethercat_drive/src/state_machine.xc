@@ -221,7 +221,7 @@ int get_next_state(int in_state, check_list &checklist, int controlword, int loc
         case S_SWITCH_ON_DISABLED:
             //printstr("Ctrl shutdown: ");
             //printintln(ctrl_shutdown(controlword));
-            if (checklist.fault || ctrl_communication_timeout(localcontrol))
+            if (checklist.fault)// || ctrl_communication_timeout(localcontrol))
                 out_state = S_FAULT_REACTION_ACTIVE;
             else if (ctrl_shutdown(controlword)) // aka ready
                 out_state = S_READY_TO_SWITCH_ON;
