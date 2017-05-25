@@ -462,7 +462,11 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         /*
          *  local state variables
          */
+        int old_controlword = controlword;
         controlword     = pdo_get_controlword(InOut);
+        if (controlword != old_controlword) {
+            printf("Controlword changed from %d to %d\n", old_controlword, controlword);
+        }
         opmode_request  = pdo_get_op_mode(InOut);
         target_position = pdo_get_target_position(InOut);
         target_velocity = pdo_get_target_velocity(InOut);
