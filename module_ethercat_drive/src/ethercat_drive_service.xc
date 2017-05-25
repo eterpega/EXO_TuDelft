@@ -587,7 +587,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
          *  update values to send
          */
         if(last_statusword != statusword){
-            printintln(statusword);
+            printf("Status: %04X",statusword);
         }
         last_statusword = statusword;
 
@@ -753,6 +753,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                  * The fault can only be reset after the end of the timer.
                  * This is because the motorcontrol needs time before restarting.
                  */
+                printf("Motorcontrol Fault: %04X\n Motion Sensor Error %04X\n, Commutation Sensor Error %04X\n",motorcontrol_fault,motion_sensor_error,commutation_sensor_error);
                 if (read_controlword_fault_reset(controlword) && checklist.fault_reset_wait == false) {
                     //reset fault in motorcontrol
                     if (motorcontrol_fault != NO_FAULT) {
