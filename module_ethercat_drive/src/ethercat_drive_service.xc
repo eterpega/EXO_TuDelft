@@ -744,6 +744,8 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                     quick_stop_steps = 0;
                     i_motion_control.disable();
                 }
+                printf("Motorcontrol Fault: %04X\nMotion Sensor Error %04X\nCommutation Sensor Error %04X\n",motorcontrol_fault,motion_sensor_error,commutation_sensor_error);
+
                 break;
 
             case S_FAULT:
@@ -753,7 +755,6 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                  * The fault can only be reset after the end of the timer.
                  * This is because the motorcontrol needs time before restarting.
                  */
-                printf("Motorcontrol Fault: %04X\n Motion Sensor Error %04X\n, Commutation Sensor Error %04X\n",motorcontrol_fault,motion_sensor_error,commutation_sensor_error);
                 if (read_controlword_fault_reset(controlword) && checklist.fault_reset_wait == false) {
                     //reset fault in motorcontrol
                     if (motorcontrol_fault != NO_FAULT) {
