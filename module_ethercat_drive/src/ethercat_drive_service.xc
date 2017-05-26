@@ -744,7 +744,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                     quick_stop_steps = 0;
                     i_motion_control.disable();
                 }
-                printf("Motorcontrol Fault: %04X\nMotion Sensor Error %04X\nCommutation Sensor Error %04X\n",motorcontrol_fault,motion_sensor_error,commutation_sensor_error);
+//                printf("Motorcontrol Fault: %04X\nMotion Sensor Error %04X\nCommutation Sensor Error %04X\n",motorcontrol_fault,motion_sensor_error,commutation_sensor_error);
 
                 break;
 

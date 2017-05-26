@@ -28,7 +28,7 @@ XCC_FLAGS_Debug = -g -O3 -DCOM_ETHERCAT -lflash -report
 XCC_FLAGS_Release = -g -O3 -DCOM_ETHERCAT  -lflash
 
 # The VERBOSE variable, if set to 1, enables verbose output from the make system.
-VERBOSE = 1
+VERBOSE = 0
 
 XMOS_MAKE_PATH ?= ../..
 -include $(XMOS_MAKE_PATH)/xcommon/module_xcommon/build/Makefile.common
