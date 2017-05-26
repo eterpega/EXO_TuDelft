@@ -108,10 +108,10 @@ check_list init_checklist(void)
     return check_list_param;
 }
 
-void update_checklist(check_list &check_list_param, int mode, int fault)
+void update_checklist(check_list &check_list_param, int mode, int motorcontrol_fault)
 {
-    check_list_param.fault = fault;
-    switch(fault) {
+    check_list_param.fault = motorcontrol_fault;
+    switch(motorcontrol_fault) {
     case MAX_TARGET_POSITION_EXCEEDED:
     case MIN_TARGET_POSITION_EXCEEDED:
     case NO_FAULT:
