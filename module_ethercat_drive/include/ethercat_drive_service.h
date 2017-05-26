@@ -14,6 +14,9 @@
 
 #include <profile_control.h>
 
+#define DEBUG_PRINT_ECAT 1
+
+
 /**
  * @brief This Service enables motor drive functions via EtherCAT.
  *

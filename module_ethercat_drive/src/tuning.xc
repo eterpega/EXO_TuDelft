@@ -9,6 +9,114 @@
 #include <ctype.h>
 #include <state_modes.h>
 
+
+void debug_print(TuningModeState  &tuning_mode_state)
+{
+    char name[20];
+
+    switch(tuning_mode_state.command) {
+        case TUNING_CMD_POSITION_KP:
+            sprintf(name,"position kp");
+            break;
+        case TUNING_CMD_POSITION_KI:
+            sprintf(name,"position ki");
+            break;
+        case TUNING_CMD_POSITION_KD:
+            sprintf(name,"position kd");
+            break;
+        case TUNING_CMD_POSITION_I_LIM:
+            sprintf(name,"position I");
+            break;
+        case TUNING_CMD_MOMENT_INERTIA:
+            sprintf(name,"moment of Inertia");
+            break;
+        case TUNING_CMD_POSITION_PROFILER:
+            sprintf(name,"position profiler");
+            break;
+        case TUNING_CMD_VELOCITY_KP:
+            sprintf(name,"velocity kp");
+            break;
+        case TUNING_CMD_VELOCITY_KI:
+            sprintf(name,"velocity ki");
+            break;
+        case TUNING_CMD_VELOCITY_KD:
+            sprintf(name,"velocity kd");
+            break;
+        case TUNING_CMD_VELOCITY_I_LIM:
+            sprintf(name,"velocity I");
+            break;
+        case TUNING_CMD_MAX_TORQUE:
+            sprintf(name,"max torque");
+            break;
+        case TUNING_CMD_MAX_SPEED:
+            sprintf(name,"max speed");
+            break;
+        case TUNING_CMD_MAX_POSITION:
+        case NO_FAULT:
+            sprintf(name,"max position");
+            break;
+        case TUNING_CMD_MIN_POSITION:
+            sprintf(name,"min torque");
+            break;
+        case TUNING_CMD_BRAKE_RELEASE_STRATEGY:
+            sprintf(name,"breake release strategy");
+            break;
+        case TUNING_CMD_POLARITY_MOTION:
+            sprintf(name,"polarity motion");
+            break;
+        case TUNING_CMD_POLARITY_SENSOR:
+            sprintf(name,"polarity sensor");
+            break;
+        case TUNING_CMD_POLE_PAIRS:
+            sprintf(name,"pole pairs");
+            break;
+        case TUNING_CMD_OFFSET:
+            sprintf(name,"offset");
+            break;
+        case TUNING_CMD_PHASES_INVERTED:
+            sprintf(name,"phases inverted");
+            break;
+        case TUNING_CMD_RATED_TORQUE:
+            sprintf(name,"rated torque");
+            break;
+        case TUNING_CMD_CONTROL_DISABLE:
+            sprintf(name,"control disable");
+            break;
+        case TUNING_CMD_CONTROL_POSITION://select control mode
+            //select control mode
+            sprintf(name,"position control mode");
+            break;
+        case TUNING_CMD_CONTROL_VELOCITY:
+            sprintf(name,"velocity control");
+            break;
+        case TUNING_CMD_CONTROL_TORQUE:
+            sprintf(name,"torque control");
+            break;
+        //auto offset tuning
+        case TUNING_CMD_AUTO_OFFSET:
+            sprintf(name,"auto tuning");
+            break;
+        //set brake
+        case TUNING_CMD_BRAKE:
+            sprintf(name,"brake");
+            break;
+        case TUNING_CMD_SAFE_TORQUE:
+            sprintf(name,"safe torque");
+            break;
+        //fault reset
+        case TUNING_CMD_FAULT_RESET:
+            sprintf(name,"resetting fault");
+            break;
+        //set zero position
+        case TUNING_CMD_ZERO_POSITION:
+            sprintf(name,"zero position");
+            break;
+        } /* end switch action command*/
+
+    printf("Config change: %s kp: [%d]\n",name, tuning_mode_state.value);
+
+}
+
 /*
  * Function to call while in tuning opmode
  *
@@ -402,6 +510,9 @@ void tuning_command_handler(
 
         } /* end switch action command*/
     } /* end if setting/action command */
+#ifdef DEBUG_PRINT_ECAT
+    debug_print(tuning_mode_state)
+#endif
 }
 
 uint8_t tuning_set_flags(TuningModeState &tuning_mode_state,

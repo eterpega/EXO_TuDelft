@@ -485,10 +485,12 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         target_velocity = pdo_get_target_velocity(InOut);
         target_torque   = (pdo_get_target_torque(InOut)*motorcontrol_config.rated_torque) / 1000; //target torque received in 1/1000 of rated torque
         send_to_control.offset_torque = pdo_get_offset_torque(InOut); /* FIXME send this to the controll */
+#ifdef DEBUG_PRINT_ECAT
         if(last_opmode != opmode_request){
             printf("New opmode requested: \n");
             printintln(opmode_request);
         }
+#endif
         last_opmode = opmode_request;
 
         /* tuning pdos */
@@ -586,9 +588,11 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         /*
          *  update values to send
          */
+#ifdef DEBUG_PRINT_ECAT
         if(last_statusword != statusword){
             printf("Status: %#04X, %d\n",statusword,statusword);
         }
+#endif
         last_statusword = statusword;
 
         int phaseB, phaseC,core_temp;
@@ -642,8 +646,9 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         /*
          * new, perform actions according to state
          */
+#ifdef DEBUG_PRINT_ECAT
         debug_print_state(state);
-
+#endif
         if (opmode == OPMODE_NONE) {
             statusword      = update_statusword(statusword, state, 0, 0, 0); /* FiXME update ack, q_active and shutdown_ack */
             /* for safety considerations, if no opmode choosen, the brake should blocking. */
@@ -745,8 +750,11 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                     quick_stop_steps = 0;
                     i_motion_control.disable();
                 }
-//                printf("Motorcontrol Fault: %04X\nMotion Sensor Error %04X\nCommutation Sensor Error %04X\n",motorcontrol_fault,motion_sensor_error,commutation_sensor_error);
-
+#ifdef DEBUG_PRINT_ECAT
+                if(state != S_FAULT_REACTION_ACTIVE){
+                    printf("Motorcontrol Fault: %04X\nMotion Sensor Error %04X\nCommutation Sensor Error %04X\n",motorcontrol_fault,motion_sensor_error,commutation_sensor_error);
+                }
+#endif
                 break;
 
             case S_FAULT:
