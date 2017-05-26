@@ -738,18 +738,46 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
 
             case S_FAULT_REACTION_ACTIVE:
                 /* a fault is detected, perform fault recovery actions like a quick_stop */
-                if (quick_stop_steps == 0) {
-                    quick_stop_steps = quick_stop_init(opmode, actual_position, actual_velocity, actual_torque, sensor_resolution, quick_stop_deceleration);
-                    quick_stop_step = 0;
+                if(motorcontrol_fault != NO_FAULT || (commutation_sensor_error != SENSOR_NO_ERROR && motion_sensor_error != SENSOR_NO_ERROR)){
+                    if (quick_stop_steps == 0) {
+                        quick_stop_steps = quick_stop_init(opmode, actual_position, actual_velocity, actual_torque, sensor_resolution, quick_stop_deceleration);
+                        quick_stop_step = 0;
+                    }
+
+                    qs_target= quick_stop_perform(opmode, quick_stop_step);
+
+                    if (quick_stop_step > quick_stop_steps) {
+                        state = get_next_state(state, checklist, 0, CTRL_FAULT_REACTION_FINISHED);
+                        quick_stop_steps = 0;
+                        i_motion_control.disable();
+                    }
+                }else if (commutation_sensor_error != SENSOR_NO_ERROR){
+
+                        //Switch to position sensor and try to keep position
+#ifdef DEBUG_PRINT_ECAT
+                        printf(">> Commutation sensor error. Using position sensor for commutation and motion\n");
+#endif
+                        position_feedback_config_1.sensor_function = SENSOR_FUNCTION_COMMUTATION_AND_MOTION_CONTROL;
+                        i_position_feedback_1.set_config(position_feedback_config_1);
+                        position_feedback_config_2.sensor_function = SENSOR_FUNCTION_DISABLED;
+                        i_position_feedback_2.set_config(position_feedback_config_2);
+                        //TODO put proper error message
+                        send_to_master.angle_last_sensor_error = 21;
+                        state = get_next_state(state, checklist, 0, CTRL_FAULT_REACTION_FINISHED);
+                }else if(motion_sensor_error != SENSOR_NO_ERROR){
+                        //Switch to position sensor and try to keep position
+#ifdef DEBUG_PRINT_ECAT
+                    printf(">> Motion sensor error. Using commutation sensor for commutation and motion\n");
+#endif
+                        position_feedback_config_2.sensor_function = SENSOR_FUNCTION_COMMUTATION_AND_MOTION_CONTROL;
+                        i_position_feedback_1.set_config(position_feedback_config_1);
+                        position_feedback_config_1.sensor_function = SENSOR_FUNCTION_DISABLED;
+                        i_position_feedback_2.set_config(position_feedback_config_2);
+                        //TODO put proper error message
+                        send_to_master.last_sensor_error = 21;
+                        state = get_next_state(state, checklist, 0, CTRL_FAULT_REACTION_FINISHED);
                 }
 
-                qs_target= quick_stop_perform(opmode, quick_stop_step);
-
-                if (quick_stop_step > quick_stop_steps) {
-                    state = get_next_state(state, checklist, 0, CTRL_FAULT_REACTION_FINISHED);
-                    quick_stop_steps = 0;
-                    i_motion_control.disable();
-                }
 #ifdef DEBUG_PRINT_ECAT
                 if(state != S_FAULT_REACTION_ACTIVE){
                     printf("Motorcontrol Fault: %04X\nMotion Sensor Error %04X\nCommutation Sensor Error %04X\n",motorcontrol_fault,motion_sensor_error,commutation_sensor_error);
