@@ -591,8 +591,8 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         }
         last_statusword = statusword;
 
-        int phaseB, phaseC;
-        {phaseB, phaseC, void, void, void, void, void, void, void, void} = i_adc.get_all_measurements();
+        int phaseB, phaseC,core_temp;
+        {phaseB, phaseC, void, void, core_temp, void, void, void, void, void} = i_adc.get_all_measurements();
 
         pdo_set_statusword(statusword, InOut);
         pdo_set_op_mode_display(opmode, InOut);
@@ -609,6 +609,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
 
         pdo_set_phase_b_current(phaseB, InOut);
         pdo_set_phase_c_current(phaseC, InOut);
+        pdo_set_core_temp(core_temp, InOut);
 
         //printintln(send_to_master.secondary_position);
 
