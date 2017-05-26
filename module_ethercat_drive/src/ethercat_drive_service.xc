@@ -560,15 +560,6 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                 motion_control_error != MOTION_CONTROL_NO_ERROR)
         {
             update_checklist(checklist, opmode, motorcontrol_fault);
-            if (motorcontrol_fault == DEVICE_INTERNAL_CONTINOUS_OVER_CURRENT_NO_1) {
-                SET_BIT(statusword, SW_FAULT_OVER_CURRENT);
-            } else if (motorcontrol_fault == UNDER_VOLTAGE_NO_1) {
-                SET_BIT(statusword, SW_FAULT_UNDER_VOLTAGE);
-            } else if (motorcontrol_fault == OVER_VOLTAGE_NO_1) {
-                SET_BIT(statusword, SW_FAULT_OVER_VOLTAGE);
-            } else if (motorcontrol_fault == 99/*OVER_TEMPERATURE*/) {
-                SET_BIT(statusword, SW_FAULT_OVER_TEMPERATURE);
-            }
 
             /* Write error code to object dictionary */
             int error_code = get_cia402_error_code(motorcontrol_fault, motion_sensor_error, commutation_sensor_error, motion_control_error);
@@ -669,8 +660,6 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
              *         -> 1 if target_position_value || position_offset is outside of following_error_window
              *              around position_demand_value for longer than following_error_time_out
              */
-            statusword = SET_BIT(statusword, SW_CSP_TARGET_POSITION_IGNORED);
-            statusword = CLEAR_BIT(statusword, SW_CSP_FOLLOWING_ERROR);
 
             // FIXME make this function: continous_synchronous_operation(controlword, statusword, state, opmode, checklist, i_motion_control);
             switch (state) {
@@ -789,12 +778,6 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
 
                 state = get_next_state(state, checklist, controlword, 0);
 
-                if (state == S_SWITCH_ON_DISABLED) {
-                    CLEAR_BIT(statusword, SW_FAULT_OVER_CURRENT);
-                    CLEAR_BIT(statusword, SW_FAULT_UNDER_VOLTAGE);
-                    CLEAR_BIT(statusword, SW_FAULT_OVER_VOLTAGE);
-                    CLEAR_BIT(statusword, SW_FAULT_OVER_TEMPERATURE);
-                }
                 break;
 
             default: /* should never happen! */
