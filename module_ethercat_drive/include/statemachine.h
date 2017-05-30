@@ -47,7 +47,8 @@ typedef enum e_States {
     S_OPERATION_ENABLE = 5,
     S_QUICK_STOP_ACTIVE = 6,
     S_FAULT_REACTION_ACTIVE = 8,
-    S_FAULT = 7
+    S_FAULT = 7,
+    S_SENSOR_FAULT =9
 } states;
 
 typedef states DriveState_t;
