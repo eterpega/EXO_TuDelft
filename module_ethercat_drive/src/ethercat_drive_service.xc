@@ -18,6 +18,7 @@
 #include <profile_control.h>
 #include <xscope.h>
 #include <tuning.h>
+#include <user_config.h>
 
 /* FIXME move to some stdlib */
 #define ABSOLUTE_VALUE(x)   (x < 0 ? -x : x)
@@ -844,6 +845,47 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                 break;
             case S_SENSOR_FAULT:
 
+                if (read_controlword_fault_reset(controlword) && checklist.fault_reset_wait == false) {
+
+
+                  //reset fault in position feedback
+                  if (motion_sensor_error != SENSOR_NO_ERROR || commutation_sensor_error != SENSOR_NO_ERROR) {
+
+#ifdef DEBUG_PRINT_ECAT
+                   printf(">> Trying to resolve sensor error. Changing back sensor config\n");
+#endif
+
+                      //We should actually check the inital config and not use the user_config.h but for now it should be fine
+                      position_feedback_config_1.sensor_function = SENSOR_1_FUNCTION;
+                      position_feedback_config_2.sensor_function = SENSOR_2_FUNCTION;
+
+                      i_position_feedback_1.set_config(position_feedback_config_1);
+                      i_position_feedback_2.set_config(position_feedback_config_2);
+                      checklist.fault_reset_wait == true;
+
+                  }else if(checklist.fault_reset_wait){
+                      update_checklist(checklist, motorcontrol_fault,commutation_sensor_error,motion_sensor_error,motion_control_error);
+                  }
+//TODO put this whole block in get_next_state()
+                  if (motorcontrol_fault != NO_FAULT){
+                      state = S_FAULT_REACTION_ACTIVE;
+                  }else if(!any_fault(checklist)){
+                    checklist.fault_reset_wait = false;
+                    state = S_OPERATION_ENABLE;
+                }
+//until here
+#ifdef DEBUG_PRINT_ECAT
+                  else{
+                   printf("Could not resolve error!\nMotorcontrol error: %04X\nMotion Sensor Error %04X\nCommutation Sensor Error %04X\n",motorcontrol_fault,motion_sensor_error,commutation_sensor_error);
+               }
+#endif
+                }
+#ifdef DEBUG_PRINT_ECAT
+
+               if(state != S_SENSOR_FAULT){
+                   printf("Fault resolved!\nMotorcontrol error: %04X\nMotion Sensor Error %04X\nCommutation Sensor Error %04X\n",motorcontrol_fault,motion_sensor_error,commutation_sensor_error);
+               }
+#endif
 
 
                 break;
