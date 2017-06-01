@@ -347,6 +347,12 @@ int get_next_state(int in_state, check_list &checklist, int controlword, int loc
                 out_state = S_FAULT;
             }
             break;
+        case S_SENSOR_FAULT:
+            if (checklist.motorcontrol_fault != NO_FAULT){
+                out_state = S_FAULT_REACTION_ACTIVE;
+            }else if(!any_fault(checklist)){
+                out_state = S_OPERATION_ENABLE;
+            }
     }
 
     return out_state;
