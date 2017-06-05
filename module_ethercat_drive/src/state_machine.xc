@@ -127,6 +127,7 @@ void update_checklist(check_list &check_list_param, int motorcontrol_fault,int c
 
     }
     switch(commutation_sensor_fault) {
+    case SENSOR_SSI_CONN_ERROR:
     case SENSOR_NO_ERROR:
         check_list_param.commutation_sensor_fault = false;
         break;
@@ -136,6 +137,7 @@ void update_checklist(check_list &check_list_param, int motorcontrol_fault,int c
 
     }
     switch(motion_sensor_fault) {
+    case SENSOR_SSI_CONN_ERROR:
     case SENSOR_NO_ERROR:
         check_list_param.motion_sensor_fault = false;
         break;

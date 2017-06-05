@@ -457,7 +457,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         /* Check if we reenter the operation mode. If so, update the configuration please. */
         select {
             case i_coe.operational_state_change():
-                //printstrln("Master requests OP mode - cyclic operation is about to start.");
+                printstrln("Master requests OP mode - cyclic operation is about to start.");
                 drive_in_opstate = i_coe.in_op_state();
                 if (drive_in_opstate) {
                     read_configuration = 1;
