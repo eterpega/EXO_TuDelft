@@ -103,27 +103,62 @@ check_list init_checklist(void)
 {
     check_list check_list_param;
 
-    check_list_param.fault = false;
+    check_list_param.motorcontrol_fault = false;
+    check_list_param.commutation_sensor_fault = false;
+    check_list_param.motion_sensor_fault = false;
+    check_list_param.motion_control_fault = false;
     check_list_param.fault_reset_wait = false;
     return check_list_param;
 }
 
-void update_checklist(check_list &check_list_param, int mode, int fault)
+void update_checklist(check_list &check_list_param, int motorcontrol_fault,int commutation_sensor_fault,int motion_sensor_fault,int motion_control_error)
 {
-    check_list_param.fault = fault;
-    switch(fault) {
+    //split update checklist in one function for every error?
+    check_list_param.motorcontrol_fault = motorcontrol_fault;
+    switch(motorcontrol_fault) {
     case MAX_TARGET_POSITION_EXCEEDED:
     case MIN_TARGET_POSITION_EXCEEDED:
     case NO_FAULT:
-        check_list_param.fault = false;
+        check_list_param.motorcontrol_fault = false;
         break;
     default:
-        check_list_param.fault = true;
+        check_list_param.motorcontrol_fault = true;
         break;
 
     }
+    switch(commutation_sensor_fault) {
+    case SENSOR_NO_ERROR:
+        check_list_param.commutation_sensor_fault = false;
+        break;
+    default:
+        check_list_param.commutation_sensor_fault = true;
+        break;
+
+    }
+    switch(motion_sensor_fault) {
+    case SENSOR_NO_ERROR:
+        check_list_param.motion_sensor_fault = false;
+        break;
+    default:
+        check_list_param.motion_sensor_fault = true;
+        break;
+
+    }
+    switch(motion_control_error) {
+        case MOTION_CONTROL_NO_ERROR:
+        case MOTION_CONTROL_BRAKE_NOT_RELEASED:
+            check_list_param.motion_control_fault = false;
+            break;
+        default:
+            check_list_param.motion_control_fault = true;
+            break;
+
+        }
 }
 
+bool any_fault(check_list &check_list_param){
+    return check_list_param.commutation_sensor_fault | check_list_param.motorcontrol_fault | check_list_param.motion_sensor_fault | check_list_param.motion_control_fault;
+}
 
 int init_state(void) {
     return S_NOT_READY_TO_SWITCH_ON;
@@ -212,7 +247,7 @@ int get_next_state(int in_state, check_list &checklist, int controlword, int loc
     switch(in_state)
     {
         case S_NOT_READY_TO_SWITCH_ON:
-            if (checklist.fault)
+            if (any_fault(checklist))
                 out_state = S_FAULT_REACTION_ACTIVE;
             else 
                 out_state = S_SWITCH_ON_DISABLED;
@@ -221,7 +256,7 @@ int get_next_state(int in_state, check_list &checklist, int controlword, int loc
         case S_SWITCH_ON_DISABLED:
             //printstr("Ctrl shutdown: ");
             //printintln(ctrl_shutdown(controlword));
-            if (checklist.fault)// || ctrl_communication_timeout(localcontrol))
+            if (any_fault(checklist))// || ctrl_communication_timeout(localcontrol))
                 out_state = S_FAULT_REACTION_ACTIVE;
             else if (ctrl_shutdown(controlword)) // aka ready
                 out_state = S_READY_TO_SWITCH_ON;
@@ -231,7 +266,7 @@ int get_next_state(int in_state, check_list &checklist, int controlword, int loc
 
         case S_READY_TO_SWITCH_ON:
             ctrl_input = read_controlword_switch_on(controlword);
-            if (checklist.fault || ctrl_communication_timeout(localcontrol))
+            if (any_fault(checklist) || ctrl_communication_timeout(localcontrol))
                 out_state = S_FAULT_REACTION_ACTIVE;
             else if (ctrl_switch_on(controlword))
                 out_state = S_SWITCH_ON;
@@ -247,7 +282,7 @@ int get_next_state(int in_state, check_list &checklist, int controlword, int loc
 
         case S_SWITCH_ON:
             ctrl_input = read_controlword_enable_op(controlword);
-            if (checklist.fault || ctrl_communication_timeout(localcontrol))
+            if (any_fault(checklist) || ctrl_communication_timeout(localcontrol))
                 out_state = S_FAULT_REACTION_ACTIVE;
             else if (ctrl_enable_op(controlword))
                 out_state = S_OPERATION_ENABLE;
@@ -265,7 +300,7 @@ int get_next_state(int in_state, check_list &checklist, int controlword, int loc
 
         case S_OPERATION_ENABLE:
             ctrl_input = read_controlword_quick_stop(controlword); //quick stop
-            if (checklist.fault || ctrl_communication_timeout(localcontrol))
+            if (any_fault(checklist) || ctrl_communication_timeout(localcontrol))
                 out_state = S_FAULT_REACTION_ACTIVE;
             else if (ctrl_disable_op(controlword))
                 out_state = S_SWITCH_ON;
@@ -286,7 +321,7 @@ int get_next_state(int in_state, check_list &checklist, int controlword, int loc
             break;
 
         case S_QUICK_STOP_ACTIVE:
-            if (checklist.fault || ctrl_communication_timeout(localcontrol))
+            if (any_fault(checklist)|| ctrl_communication_timeout(localcontrol))
                 out_state = S_FAULT_REACTION_ACTIVE;
             else if (ctrl_disable_volt(controlword))
                 out_state = S_SWITCH_ON_DISABLED; /* FIXME Warning: quick stop has to be finished before switch back to SOD */
@@ -306,10 +341,19 @@ int get_next_state(int in_state, check_list &checklist, int controlword, int loc
 
         case S_FAULT:
             ctrl_input = read_controlword_fault_reset(controlword);
-            if (ctrl_fault_reset(controlword) && checklist.fault_reset_wait == false && !checklist.fault) {
+            if (ctrl_fault_reset(controlword) && checklist.fault_reset_wait == false && !any_fault(checklist)) {
                 out_state = S_SWITCH_ON_DISABLED;
             } else {
                 out_state = S_FAULT;
+            }
+            break;
+        case S_SENSOR_FAULT:
+            if (checklist.motorcontrol_fault){
+                out_state = S_FAULT_REACTION_ACTIVE;
+            }else if(checklist.fault_reset_wait && !any_fault(checklist)){
+                out_state = S_OPERATION_ENABLE;
+            }else{
+                out_state = S_SENSOR_FAULT;
             }
             break;
     }

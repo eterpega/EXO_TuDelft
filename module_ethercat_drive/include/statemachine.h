@@ -32,7 +32,10 @@ typedef int bool;
 //#define S_QUICK_STOP                6
 
 typedef struct S_Check_list {
-    bool fault;
+    bool motorcontrol_fault;
+    bool commutation_sensor_fault;
+    bool motion_sensor_fault;
+    bool motion_control_fault;
     bool fault_reset_wait;
 } check_list;
 
@@ -44,7 +47,8 @@ typedef enum e_States {
     S_OPERATION_ENABLE = 5,
     S_QUICK_STOP_ACTIVE = 6,
     S_FAULT_REACTION_ACTIVE = 8,
-    S_FAULT = 7
+    S_FAULT = 7,
+    S_SENSOR_FAULT =9
 } states;
 
 typedef states DriveState_t;
@@ -52,6 +56,7 @@ typedef states DriveState_t;
 bool __check_bdc_init(chanend c_signal);
 
 int init_state(void);
+
 
 /**
  * @brief Initialize checklist params
@@ -67,7 +72,10 @@ check_list init_checklist(void);
  * @param mode sets mode of operation
  * @param fault sets fault
  */
-void update_checklist(check_list &check_list_param, int mode, int fault);
+void update_checklist(check_list &check_list_param, int motorcontrol_fault,int commutation_sensor_fault,int motion_sensor_fault,int motion_control_fault);
+
+
+bool any_fault(check_list &check_list_param);
 
 
 /**

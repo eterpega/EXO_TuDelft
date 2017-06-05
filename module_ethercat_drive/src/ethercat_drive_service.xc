@@ -18,6 +18,7 @@
 #include <profile_control.h>
 #include <xscope.h>
 #include <tuning.h>
+#include <user_config.h>
 
 /* FIXME move to some stdlib */
 #define ABSOLUTE_VALUE(x)   (x < 0 ? -x : x)
@@ -309,6 +310,9 @@ static void debug_print_state(DriveState_t state)
     case S_FAULT:
         printstrln("S_FAULT");
         break;
+    case S_SENSOR_FAULT:
+           printstrln("S_SENSOR_FAULT");
+           break;
     default:
         printstrln("Never happen State.");
         break;
@@ -546,7 +550,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         actual_torque   = (send_to_master.computed_torque*1000) / motorcontrol_config.rated_torque; //torque sent to master in 1/1000 of rated torque
         FaultCode motorcontrol_fault = send_to_master.error_status;
         SensorError motion_sensor_error = send_to_master.last_sensor_error;
-        SensorError commutation_sensor_error = send_to_master.angle_last_sensor_error;
+        SensorError commutation_sensor_error = send_to_master.angle_sensor_error;
         MotionControlError motion_control_error = send_to_master.motion_control_error;
 
 //        xscope_int(TARGET_POSITION, send_to_control.position_cmd);
@@ -557,11 +561,11 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
          * Check states of the motor drive, sensor drive and control servers
          * Fault signaling to the master in the manufacturer specifc bit in the the statusword
          */
-        if (motorcontrol_fault != NO_FAULT ||
-                motion_sensor_error != SENSOR_NO_ERROR || commutation_sensor_error != SENSOR_NO_ERROR ||
-                motion_control_error != MOTION_CONTROL_NO_ERROR)
+        update_checklist(checklist, motorcontrol_fault,commutation_sensor_error,motion_sensor_error,motion_control_error);
+        pdo_set_error_code(72, InOut); //72 != 0, so you see the difference between no error and not connected
+
+        if (any_fault(checklist))
         {
-            update_checklist(checklist, opmode, motorcontrol_fault);
             if (motorcontrol_fault == DEVICE_INTERNAL_CONTINOUS_OVER_CURRENT_NO_1) {
                 SET_BIT(statusword, SW_FAULT_OVER_CURRENT);
             } else if (motorcontrol_fault == UNDER_VOLTAGE_NO_1) {
@@ -576,9 +580,6 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
             int error_code = get_cia402_error_code(motorcontrol_fault, motion_sensor_error, commutation_sensor_error, motion_control_error);
             i_coe.set_object_value(DICT_ERROR_CODE, 0, error_code);
             pdo_set_error_code(error_code, InOut);
-        } else {
-            update_checklist(checklist, opmode, 0); //no error
-            pdo_set_error_code(72, InOut); //72 != 0, so you see the difference between no error and not connected
         }
 
         follow_error = target_position - actual_position; /* FIXME only relevant in OP_ENABLED - used for what??? */
@@ -738,18 +739,46 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
 
             case S_FAULT_REACTION_ACTIVE:
                 /* a fault is detected, perform fault recovery actions like a quick_stop */
-                if (quick_stop_steps == 0) {
-                    quick_stop_steps = quick_stop_init(opmode, actual_position, actual_velocity, actual_torque, sensor_resolution, quick_stop_deceleration);
-                    quick_stop_step = 0;
+                if(motorcontrol_fault != NO_FAULT || (commutation_sensor_error != SENSOR_NO_ERROR && motion_sensor_error != SENSOR_NO_ERROR)){
+                    if (quick_stop_steps == 0) {
+                        quick_stop_steps = quick_stop_init(opmode, actual_position, actual_velocity, actual_torque, sensor_resolution, quick_stop_deceleration);
+                        quick_stop_step = 0;
+                    }
+
+                    qs_target= quick_stop_perform(opmode, quick_stop_step);
+
+                    if (quick_stop_step > quick_stop_steps) {
+                        state = get_next_state(state, checklist, 0, CTRL_FAULT_REACTION_FINISHED);
+                        quick_stop_steps = 0;
+                        i_motion_control.disable();
+                    }
+                }else if (commutation_sensor_error != SENSOR_NO_ERROR){
+
+                        //Switch to position sensor and try to keep setpoint
+#ifdef DEBUG_PRINT_ECAT
+                        printf(">> Commutation sensor error. Using position sensor for commutation and motion\n");
+#endif
+                        position_feedback_config_1.sensor_function = SENSOR_FUNCTION_COMMUTATION_AND_MOTION_CONTROL;
+                        position_feedback_config_2.sensor_function = SENSOR_FUNCTION_DISABLED;
+                        i_position_feedback_1.set_config(position_feedback_config_1);
+                        i_position_feedback_2.set_config(position_feedback_config_2);
+                        //TODO put proper error message
+                        send_to_master.angle_last_sensor_error = 21;
+                        state = S_SENSOR_FAULT;
+                }else if(motion_sensor_error != SENSOR_NO_ERROR){
+                        //Switch to position sensor and try to keep setpoint
+#ifdef DEBUG_PRINT_ECAT
+                    printf(">> Motion sensor error. Using commutation sensor for commutation and motion\n");
+#endif
+                        position_feedback_config_2.sensor_function = SENSOR_FUNCTION_COMMUTATION_AND_MOTION_CONTROL;
+                        position_feedback_config_1.sensor_function = SENSOR_FUNCTION_DISABLED;
+                        i_position_feedback_1.set_config(position_feedback_config_1);
+                        i_position_feedback_2.set_config(position_feedback_config_2);
+                        //TODO put proper error message
+                        send_to_master.last_sensor_error = 21;
+                        state = S_SENSOR_FAULT;
                 }
 
-                qs_target= quick_stop_perform(opmode, quick_stop_step);
-
-                if (quick_stop_step > quick_stop_steps) {
-                    state = get_next_state(state, checklist, 0, CTRL_FAULT_REACTION_FINISHED);
-                    quick_stop_steps = 0;
-                    i_motion_control.disable();
-                }
 #ifdef DEBUG_PRINT_ECAT
                 if(state != S_FAULT_REACTION_ACTIVE){
                     printf("Motorcontrol Fault: %04X\nMotion Sensor Error %04X\nCommutation Sensor Error %04X\n",motorcontrol_fault,motion_sensor_error,commutation_sensor_error);
@@ -764,36 +793,37 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                  * The fault can only be reset after the end of the timer.
                  * This is because the motorcontrol needs time before restarting.
                  */
-                if (read_controlword_fault_reset(controlword) && checklist.fault_reset_wait == false) {
-                    //reset fault in motorcontrol
-                    if (motorcontrol_fault != NO_FAULT) {
-                        i_torque_control.reset_faults();
-                        checklist.fault_reset_wait = true;
-                    }
-                    //reset fault in position feedback
-                    if (motion_sensor_error != SENSOR_NO_ERROR || commutation_sensor_error != SENSOR_NO_ERROR) {
-                        if (!isnull(i_position_feedback_2)) {
-                            i_position_feedback_2.set_config(position_feedback_config_2);
+                 if (read_controlword_fault_reset(controlword) && checklist.fault_reset_wait == false) {
+                        //reset fault in motorcontrol
+                        if (motorcontrol_fault != NO_FAULT) {
+                            i_torque_control.reset_faults();
+                            checklist.fault_reset_wait = true;
                         }
-                        i_position_feedback_1.set_config(position_feedback_config_1);
-                        checklist.fault_reset_wait = true;
-                    }
-                    //reset fault in position feedback
-                    if (motion_control_error != MOTION_CONTROL_NO_ERROR) {
-                        i_motion_control.set_motion_control_config(motion_control_config);
-                    }
-                    //start timer
-                    fault_reset_wait_time = time + 1000000*tile_usec; //wait 1s before restarting the motorcontrol
-                } else if (checklist.fault_reset_wait == true) {
-                    //check if timer ended
-                    if (timeafter(time, fault_reset_wait_time)) {
-                        checklist.fault_reset_wait = false;
-                        /* recheck fault to see if it's realy removed */
-                        if (motorcontrol_fault != NO_FAULT || motion_sensor_error != SENSOR_NO_ERROR || commutation_sensor_error != SENSOR_NO_ERROR) {
-                            update_checklist(checklist, opmode, 1);
+                        //reset fault in position feedback
+                        if (motion_sensor_error != SENSOR_NO_ERROR || commutation_sensor_error != SENSOR_NO_ERROR) {
+                            if (!isnull(i_position_feedback_2)) {
+                                i_position_feedback_2.set_config(position_feedback_config_2);
+                            }
+                            i_position_feedback_1.set_config(position_feedback_config_1);
+                            checklist.fault_reset_wait = true;
+                        }
+                        //reset fault in position feedback
+                        if (motion_control_error != MOTION_CONTROL_NO_ERROR) {
+                            i_motion_control.set_motion_control_config(motion_control_config);
+                        }
+                        //start timer
+                        fault_reset_wait_time = time + 1000000*tile_usec; //wait 1s before restarting the motorcontrol
+                    } else if (checklist.fault_reset_wait == true) {
+                        //check if timer ended
+                        if (timeafter(time, fault_reset_wait_time)) {
+                            checklist.fault_reset_wait = false;
+                            /* recheck fault to see if it's realy removed */
+                            if (motorcontrol_fault != NO_FAULT || motion_sensor_error != SENSOR_NO_ERROR || commutation_sensor_error != SENSOR_NO_ERROR) {
+                                update_checklist(checklist, motorcontrol_fault,commutation_sensor_error,motion_sensor_error,motion_control_error);
+                            }
                         }
                     }
-                }
+
 
                 state = get_next_state(state, checklist, controlword, 0);
 
@@ -802,9 +832,47 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                     CLEAR_BIT(statusword, SW_FAULT_UNDER_VOLTAGE);
                     CLEAR_BIT(statusword, SW_FAULT_OVER_VOLTAGE);
                     CLEAR_BIT(statusword, SW_FAULT_OVER_TEMPERATURE);
-                }
-                break;
+                 }
 
+#ifdef DEBUG_PRINT_ECAT
+                if(state != S_FAULT){
+                    printf("Fault resolved!\nMotorcontrol error: %04X\nMotion Sensor Error %04X\nCommutation Sensor Error %04X\n",motorcontrol_fault,motion_sensor_error,commutation_sensor_error);
+                }
+#endif
+
+                break;
+            case S_SENSOR_FAULT:
+
+                if (read_controlword_fault_reset(controlword) && checklist.fault_reset_wait == false) {
+
+#ifdef DEBUG_PRINT_ECAT
+                   printf(">> Trying to resolve sensor error. Changing back sensor config\n");
+#endif
+                  //We should actually check the inital config and not use the user_config.h but for now it should be fine
+                  position_feedback_config_1.sensor_function = SENSOR_1_FUNCTION;
+                  position_feedback_config_2.sensor_function = SENSOR_2_FUNCTION;
+
+                  i_position_feedback_1.set_config(position_feedback_config_1);
+                  i_position_feedback_2.set_config(position_feedback_config_2);
+                  checklist.fault_reset_wait == true;
+
+                }
+                state = get_next_state(state,checklist,controlword,0);
+
+               if(state != S_SENSOR_FAULT){
+                   checklist.fault_reset_wait = false;
+#ifdef DEBUG_PRINT_ECAT
+                   printf("Fault resolved!\nMotorcontrol error: %04X\nMotion Sensor Error %04X\nCommutation Sensor Error %04X\n",motorcontrol_fault,motion_sensor_error,commutation_sensor_error);
+                   debug_print_state(state);
+#endif
+               }
+#ifdef DEBUG_PRINT_ECAT
+               else if(checklist.fault_reset_wait){
+                   printf("Cannot resolve error!\nMotorcontrol error: %04X\nMotion Sensor Error %04X\nCommutation Sensor Error %04X\n",motorcontrol_fault,motion_sensor_error,commutation_sensor_error);
+               }
+#endif
+
+                break;
             default: /* should never happen! */
                 //printstrln("Should never happen happend.");
                 state = get_next_state(state, checklist, 0, FAULT_RESET_CONTROL);
