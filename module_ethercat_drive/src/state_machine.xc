@@ -127,7 +127,6 @@ void update_checklist(check_list &check_list_param, int motorcontrol_fault,int c
 
     }
     switch(commutation_sensor_fault) {
-    case SENSOR_SSI_CONN_ERROR:
     case SENSOR_NO_ERROR:
         check_list_param.commutation_sensor_fault = false;
         break;
@@ -137,7 +136,6 @@ void update_checklist(check_list &check_list_param, int motorcontrol_fault,int c
 
     }
     switch(motion_sensor_fault) {
-    case SENSOR_SSI_CONN_ERROR:
     case SENSOR_NO_ERROR:
         check_list_param.motion_sensor_fault = false;
         break;
@@ -350,11 +348,14 @@ int get_next_state(int in_state, check_list &checklist, int controlword, int loc
             }
             break;
         case S_SENSOR_FAULT:
-            if (checklist.motorcontrol_fault != NO_FAULT){
+            if (checklist.motorcontrol_fault){
                 out_state = S_FAULT_REACTION_ACTIVE;
-            }else if(!any_fault(checklist)){
+            }else if(checklist.fault_reset_wait && !any_fault(checklist)){
                 out_state = S_OPERATION_ENABLE;
+            }else{
+                out_state = S_SENSOR_FAULT;
             }
+            break;
     }
 
     return out_state;

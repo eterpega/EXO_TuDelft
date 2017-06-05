@@ -457,7 +457,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         /* Check if we reenter the operation mode. If so, update the configuration please. */
         select {
             case i_coe.operational_state_change():
-                printstrln("Master requests OP mode - cyclic operation is about to start.");
+                //printstrln("Master requests OP mode - cyclic operation is about to start.");
                 drive_in_opstate = i_coe.in_op_state();
                 if (drive_in_opstate) {
                     read_configuration = 1;
@@ -754,7 +754,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                     }
                 }else if (commutation_sensor_error != SENSOR_NO_ERROR){
 
-                        //Switch to position sensor and try to keep position
+                        //Switch to position sensor and try to keep setpoint
 #ifdef DEBUG_PRINT_ECAT
                         printf(">> Commutation sensor error. Using position sensor for commutation and motion\n");
 #endif
@@ -765,9 +765,8 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                         //TODO put proper error message
                         send_to_master.angle_last_sensor_error = 21;
                         state = S_SENSOR_FAULT;
-                        //state = get_next_state(state, checklist, 0, CTRL_FAULT_REACTION_FINISHED);
                 }else if(motion_sensor_error != SENSOR_NO_ERROR){
-                        //Switch to position sensor and try to keep position
+                        //Switch to position sensor and try to keep setpoint
 #ifdef DEBUG_PRINT_ECAT
                     printf(">> Motion sensor error. Using commutation sensor for commutation and motion\n");
 #endif
@@ -778,7 +777,6 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                         //TODO put proper error message
                         send_to_master.last_sensor_error = 21;
                         state = S_SENSOR_FAULT;
-                        //state = get_next_state(state, checklist, 0, CTRL_FAULT_REACTION_FINISHED);
                 }
 
 #ifdef DEBUG_PRINT_ECAT
@@ -858,14 +856,14 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                   i_position_feedback_2.set_config(position_feedback_config_2);
                   checklist.fault_reset_wait == true;
 
-                }else if(checklist.fault_reset_wait){
-                      update_checklist(checklist, motorcontrol_fault,commutation_sensor_error,motion_sensor_error,motion_control_error);
                 }
                 state = get_next_state(state,checklist,controlword,0);
+
                if(state != S_SENSOR_FAULT){
                    checklist.fault_reset_wait = false;
 #ifdef DEBUG_PRINT_ECAT
                    printf("Fault resolved!\nMotorcontrol error: %04X\nMotion Sensor Error %04X\nCommutation Sensor Error %04X\n",motorcontrol_fault,motion_sensor_error,commutation_sensor_error);
+                   debug_print_state(state);
 #endif
                }
 #ifdef DEBUG_PRINT_ECAT
