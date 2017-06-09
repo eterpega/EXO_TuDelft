@@ -180,7 +180,10 @@ static int quick_stop_init(int opmode,
     if (actual_velocity < 0) {
         actual_velocity = -actual_velocity;
     }
-    int steps_limit = (1000*actual_velocity)/quick_stop_deceleration + 1;
+    int steps_limit = 1;
+    if(quick_stop_deceleration != 0) {
+        steps_limit += (1000*actual_velocity)/quick_stop_deceleration;
+    }
     if (steps > steps_limit) {
         steps = steps_limit;
     }
