@@ -371,8 +371,13 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
 
     int opmode = OPMODE_NONE;
     int opmode_request = OPMODE_NONE;
+#ifdef DEBUG_PRINT_ECAT
     int last_opmode = 0;
-
+    int last_controlword = 0;
+    int last_target_pos = 0;
+    int last_target_vel = 0;
+    int last_target_torque = 0;
+#endif
     MotionControlConfig motion_control_config = i_motion_control.get_motion_control_config();
 
     pdo_handler_values_t InOut = { 0 };
@@ -497,8 +502,19 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
             printf("New opmode requested: \n");
             printintln(opmode_request);
         }
-#endif
         last_opmode = opmode_request;
+        if(last_controlword != controlword){
+            printf("New controlword: \n");
+            printintln(controlword);
+        }
+        last_controlword = controlword;
+        if(last_target_pos != target_position){
+//            printf("New Target Position: \n");
+//            printintln(target_position);
+        }
+        last_target_pos = target_position;
+#endif
+
 
         /* tuning pdos */
         tuning_command = pdo_get_tuning_command(InOut); // mode 3, 2 and 1 in tuning command
@@ -797,6 +813,9 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                  * This is because the motorcontrol needs time before restarting.
                  */
                  if (read_controlword_fault_reset(controlword) && checklist.fault_reset_wait == false) {
+#ifdef DEBUG_PRINT_ECAT
+                      printf("Clear Error received\n");
+#endif
                         //reset fault in motorcontrol
                         if (motorcontrol_fault != NO_FAULT) {
                             i_torque_control.reset_faults();
@@ -821,14 +840,12 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                         if (timeafter(time, fault_reset_wait_time)) {
                             checklist.fault_reset_wait = false;
                             /* recheck fault to see if it's realy removed */
-                            if (motorcontrol_fault != NO_FAULT || motion_sensor_error != SENSOR_NO_ERROR || commutation_sensor_error != SENSOR_NO_ERROR) {
-                                update_checklist(checklist, motorcontrol_fault,commutation_sensor_error,motion_sensor_error,motion_control_error);
-                            }
+                            state = get_next_state(state, checklist, controlword, 0);
                         }
                     }
 
 
-                state = get_next_state(state, checklist, controlword, 0);
+
 
                 if (state == S_SWITCH_ON_DISABLED) {
                     CLEAR_BIT(statusword, SW_FAULT_OVER_CURRENT);

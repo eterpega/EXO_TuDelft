@@ -116,8 +116,6 @@ void update_checklist(check_list &check_list_param, int motorcontrol_fault,int c
     //split update checklist in one function for every error?
     check_list_param.motorcontrol_fault = motorcontrol_fault;
     switch(motorcontrol_fault) {
-    case MAX_TARGET_POSITION_EXCEEDED:
-    case MIN_TARGET_POSITION_EXCEEDED:
     case NO_FAULT:
         check_list_param.motorcontrol_fault = false;
         break;
@@ -147,6 +145,9 @@ void update_checklist(check_list &check_list_param, int motorcontrol_fault,int c
     switch(motion_control_error) {
         case MOTION_CONTROL_NO_ERROR:
         case MOTION_CONTROL_BRAKE_NOT_RELEASED:
+        case MAX_TARGET_POSITION_EXCEEDED:
+        case MIN_TARGET_POSITION_EXCEEDED:
+        case MOTION_CONTROL_SOFT_STOP_REACHED:
             check_list_param.motion_control_fault = false;
             break;
         default:
