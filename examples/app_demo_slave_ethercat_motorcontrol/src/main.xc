@@ -97,7 +97,7 @@ int main(void)
             ethercat_drive_service_debug( profiler_config,
                                     i_pdo, i_coe,
                                     i_torque_control[1],
-                                    i_motion_control[0], i_position_feedback[0]);
+                                    i_motion_control[0], i_position_feedback_1[0]);
 #else
             ethercat_drive_service( profiler_config,
                                     i_pdo, i_coe,
@@ -123,12 +123,6 @@ int main(void)
                     motion_ctrl_config.max_acceleration_profiler =            MAX_ACCELERATION_PROFILER;
                     motion_ctrl_config.max_deceleration_profiler =            MAX_DECELERATION_PROFILER;
                     motion_ctrl_config.max_speed_profiler =                   MAX_SPEED_PROFILER;
-                    //select resolution of sensor used for motion control
-                    if (SENSOR_2_FUNCTION == SENSOR_FUNCTION_COMMUTATION_AND_MOTION_CONTROL || SENSOR_2_FUNCTION == SENSOR_FUNCTION_MOTION_CONTROL) {
-                        motion_ctrl_config.resolution  =                      SENSOR_2_RESOLUTION;
-                    } else {
-                        motion_ctrl_config.resolution  =                      SENSOR_1_RESOLUTION;
-                    }
 
                     motion_ctrl_config.position_control_strategy =            POS_PID_CONTROLLER;
 
@@ -145,6 +139,13 @@ int main(void)
 
                     motion_ctrl_config.brake_release_strategy =                BRAKE_RELEASE_STRATEGY;
                     motion_ctrl_config.brake_release_delay =                 BRAKE_RELEASE_DELAY;
+
+                    //select resolution of sensor used for motion control
+                    if (SENSOR_2_FUNCTION == SENSOR_FUNCTION_COMMUTATION_AND_MOTION_CONTROL || SENSOR_2_FUNCTION == SENSOR_FUNCTION_MOTION_CONTROL) {
+                        motion_ctrl_config.resolution  =                      SENSOR_2_RESOLUTION;
+                    } else {
+                        motion_ctrl_config.resolution  =                      SENSOR_1_RESOLUTION;
+                    }
 
                     motion_ctrl_config.dc_bus_voltage=                        DC_BUS_VOLTAGE;
                     motion_ctrl_config.pull_brake_voltage=                    PULL_BRAKE_VOLTAGE;
@@ -247,7 +248,6 @@ int main(void)
                     position_feedback_config_1.ssi_config.data_port         = SSI_CLOCK_PORT_EXT_D1;
                     position_feedback_config_1.ssi_config.verify            = SSI_VERIFY;
 
-
                     position_feedback_config_1.biss_config.multiturn_resolution = BISS_MULTITURN_RESOLUTION;
                     position_feedback_config_1.biss_config.filling_bits = BISS_FILLING_BITS;
                     position_feedback_config_1.biss_config.crc_poly = BISS_CRC_POLY;
@@ -269,6 +269,11 @@ int main(void)
                     position_feedback_config_1.qei_config.port_number        = QEI_SENSOR_PORT_NUMBER;
 
                     position_feedback_config_1.hall_config.port_number = HALL_SENSOR_PORT_NUMBER;
+
+                    position_feedback_config_1.gpio_config[0] = 5;
+                    position_feedback_config_1.gpio_config[1] = 5;
+                    position_feedback_config_1.gpio_config[2] = 5;
+                    position_feedback_config_1.gpio_config[3] = 5;
 
                     //setting second sensor
                     PositionFeedbackConfig position_feedback_config_2 = position_feedback_config_1;

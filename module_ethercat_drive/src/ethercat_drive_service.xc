@@ -568,8 +568,8 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         actual_position = send_to_master.position; //i_motion_control.get_position();
         actual_torque   = (send_to_master.computed_torque*1000) / motorcontrol_config.rated_torque; //torque sent to master in 1/1000 of rated torque
         FaultCode motorcontrol_fault = send_to_master.error_status;
-        SensorError motion_sensor_error = send_to_master.last_sensor_error;
-        SensorError commutation_sensor_error = send_to_master.angle_sensor_error;
+        SensorError motion_sensor_error = SENSOR_NO_ERROR;// send_to_master.last_sensor_error;
+        SensorError commutation_sensor_error = SENSOR_NO_ERROR; //send_to_master.angle_sensor_error;
         MotionControlError motion_control_error = send_to_master.motion_control_error;
 
 //        xscope_int(TARGET_POSITION, send_to_control.position_cmd);
@@ -958,7 +958,7 @@ void ethercat_drive_service_debug(ProfilerConfig &profiler_config,
     UpstreamControlData   send_to_master;
     DownstreamControlData send_to_control;
     send_to_control.position_cmd = 0;
-    send_to_control.velocity_cmd = 0;
+    send_to_control.velocity_cmd = 100;
     send_to_control.torque_cmd = 0;
     send_to_control.offset_torque = 0;
 
@@ -991,17 +991,17 @@ void ethercat_drive_service_debug(ProfilerConfig &profiler_config,
             //delay_milliseconds(2000);
 //            i_torque_control.set_torque_control_enabled();
 //            i_motion_control.enable_torque_ctrl();
-           //i_motion_control.enable_velocity_ctrl();
+           i_motion_control.enable_velocity_ctrl();
            //printstr("enable\n");
-            i_motion_control.enable_position_ctrl(POS_PID_CONTROLLER);
+//            i_motion_control.enable_position_ctrl(POS_PID_CONTROLLER);
             enabled = 1;
         }
         else {
-//            i_torque_control.set_torque(100);
-//            i_motion_control.set_velocity(0);
+//            i_motion_control.set_torque(-100);
+//            i_motion_control.set_velocity(100);
 //            i_motion_control.set_position(0);
 //            i_motion_control.set_velocity(500);
-            send_to_control.position_cmd = 100000;
+//            send_to_control.position_cmd = 100000;
 //            send_to_control.offset_torque = 0;
         }
 
