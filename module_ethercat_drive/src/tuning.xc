@@ -166,7 +166,7 @@ int tuning_handler_ethercat(
         user_miso = motion_ctrl_config.max_motor_speed;
         break;
     case TUNING_STATUS_MUX_MAX_TORQUE: //max torque
-        user_miso = (motion_ctrl_config.max_torque*1000)/motorcontrol_config.rated_torque;
+        user_miso = motion_ctrl_config.max_torque;
         break;
     case TUNING_STATUS_MUX_POS_KP: //P_pos
         user_miso = motion_ctrl_config.position_kp;
@@ -286,7 +286,8 @@ void tuning_command_handler(
             motion_ctrl_config.velocity_integral_limit = tuning_mode_state.value;
             break;
         case TUNING_CMD_MAX_TORQUE:
-            motion_ctrl_config.max_torque = (tuning_mode_state.value*motorcontrol_config.rated_torque)/1000;
+            printf("Previous max torque: %d, %d\n", motion_ctrl_config.max_torque, motorcontrol_config.max_torque);
+            motion_ctrl_config.max_torque = tuning_mode_state.value;
             motorcontrol_config.max_torque = motion_ctrl_config.max_torque;
             break;
         case TUNING_CMD_MAX_SPEED:
