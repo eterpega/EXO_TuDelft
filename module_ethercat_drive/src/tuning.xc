@@ -56,7 +56,7 @@ void debug_print(TuningModeState  &tuning_mode_state)
             sprintf(name,"max position");
             break;
         case TUNING_CMD_MIN_POSITION:
-            sprintf(name,"min torque");
+            sprintf(name,"min position");
             break;
         case TUNING_CMD_BRAKE_RELEASE_STRATEGY:
             sprintf(name,"breake release strategy");
@@ -254,6 +254,10 @@ void tuning_command_handler(
 
     /* execute command */
     if (tuning_mode_state.command & TUNING_CMD_SET_PARAM_MASK) { //set parameter commands
+        printf("Previous: \n");
+#ifdef DEBUG_PRINT_ECAT
+    debug_print(tuning_mode_state);
+#endif
         switch(tuning_mode_state.command) {
         case TUNING_CMD_POSITION_KP:
             motion_ctrl_config.position_kp = tuning_mode_state.value;
@@ -286,7 +290,6 @@ void tuning_command_handler(
             motion_ctrl_config.velocity_integral_limit = tuning_mode_state.value;
             break;
         case TUNING_CMD_MAX_TORQUE:
-            printf("Previous max torque: %d, %d\n", motion_ctrl_config.max_torque, motorcontrol_config.max_torque);
             motion_ctrl_config.max_torque = tuning_mode_state.value;
             motorcontrol_config.max_torque = motion_ctrl_config.max_torque;
             break;
