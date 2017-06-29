@@ -58,18 +58,6 @@ static int get_cia402_error_code(FaultCode motorcontrol_fault, SensorError motio
     case EXCESS_TEMPERATURE_DRIVE:
         error_code = ERROR_CODE_EXCESS_TEMPERATURE_DEVICE;
         break;
-    case MAX_TARGET_POSITION_EXCEEDED:
-        error_code = ERROR_CODE_MAX_TARGET_POSITION_EXCEEDED;
-        break;
-    case MIN_TARGET_POSITION_EXCEEDED:
-        error_code = ERROR_CODE_MIN_TARGET_POSITION_EXCEEDED;
-        break;
-    case MAX_POSITION_EXCEEDED:
-        error_code = ERROR_CODE_MAX_ACTUAL_POSITION_EXCEEDED;
-        break;
-    case MIN_POSITION_EXCEEDED:
-        error_code = ERROR_CODE_MIN_ACTUAL_POSITION_EXCEEDED;
-        break;
     case NO_FAULT:
         /* if there is no motorcontrol fault check sensor fault
          * it means that motorcontrol faults take precedence over sensor faults
@@ -82,7 +70,17 @@ static int get_cia402_error_code(FaultCode motorcontrol_fault, SensorError motio
             case MOTION_CONTROL_BRAKE_NOT_RELEASED:
                 error_code = ERROR_CODE_MOTOR_BLOCKED;
                 break;
+            case MAX_TARGET_POSITION_EXCEEDED:
+                error_code = ERROR_CODE_MAX_TARGET_POSITION_EXCEEDED;
+                break;
+            case MIN_TARGET_POSITION_EXCEEDED:
+                error_code = ERROR_CODE_MIN_TARGET_POSITION_EXCEEDED;
+                break;
+            case MOTION_CONTROL_HARD_STOP_REACHED:
+                error_code = ERROR_CODE_ACTUAL_POSITION_OUT_OF_BOUNDS;
+                break;
             case MOTION_CONTROL_NO_ERROR:
+                error_code = 72;
                 break;
             default:
                 error_code = ERROR_CODE_CONTROL;
@@ -581,25 +579,21 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
          * Fault signaling to the master in the manufacturer specifc bit in the the statusword
          */
         update_checklist(checklist, motorcontrol_fault,commutation_sensor_error,motion_sensor_error,motion_control_error);
-        pdo_set_error_code(72, InOut); //72 != 0, so you see the difference between no error and not connected
-
-        if (any_fault(checklist))
-        {
-            if (motorcontrol_fault == DEVICE_INTERNAL_CONTINOUS_OVER_CURRENT_NO_1) {
-                SET_BIT(statusword, SW_FAULT_OVER_CURRENT);
-            } else if (motorcontrol_fault == UNDER_VOLTAGE_NO_1) {
-                SET_BIT(statusword, SW_FAULT_UNDER_VOLTAGE);
-            } else if (motorcontrol_fault == OVER_VOLTAGE_NO_1) {
-                SET_BIT(statusword, SW_FAULT_OVER_VOLTAGE);
-            } else if (motorcontrol_fault == 99/*OVER_TEMPERATURE*/) {
-                SET_BIT(statusword, SW_FAULT_OVER_TEMPERATURE);
-            }
-
-            /* Write error code to object dictionary */
-            int error_code = get_cia402_error_code(motorcontrol_fault, motion_sensor_error, commutation_sensor_error, motion_control_error);
-            i_coe.set_object_value(DICT_ERROR_CODE, 0, error_code);
-            pdo_set_error_code(error_code, InOut);
+        if (motorcontrol_fault == DEVICE_INTERNAL_CONTINOUS_OVER_CURRENT_NO_1) {
+            SET_BIT(statusword, SW_FAULT_OVER_CURRENT);
+        } else if (motorcontrol_fault == UNDER_VOLTAGE_NO_1) {
+            SET_BIT(statusword, SW_FAULT_UNDER_VOLTAGE);
+        } else if (motorcontrol_fault == OVER_VOLTAGE_NO_1) {
+            SET_BIT(statusword, SW_FAULT_OVER_VOLTAGE);
+        } else if (motorcontrol_fault == 99/*OVER_TEMPERATURE*/) {
+            SET_BIT(statusword, SW_FAULT_OVER_TEMPERATURE);
         }
+
+        /* Write error code to object dictionary */
+        int error_code = get_cia402_error_code(motorcontrol_fault, motion_sensor_error, commutation_sensor_error, motion_control_error);
+
+        i_coe.set_object_value(DICT_ERROR_CODE, 0, error_code);
+        pdo_set_error_code(error_code, InOut);
 
         follow_error = target_position - actual_position; /* FIXME only relevant in OP_ENABLED - used for what??? */
 
