@@ -246,6 +246,7 @@ int main(void)
                     position_feedback_config_1.ssi_config.clk_port          = SSI_CLOCK_PORT_EXT_D0;
                     position_feedback_config_1.ssi_config.data_port         = SSI_CLOCK_PORT_EXT_D1;
                     position_feedback_config_1.ssi_config.verify            = SSI_VERIFY;
+                    position_feedback_config_1.ssi_config.enableVerify      = SSI_ENABLE_VERIFY;
 
 
                     position_feedback_config_1.biss_config.multiturn_resolution = BISS_MULTITURN_RESOLUTION;
