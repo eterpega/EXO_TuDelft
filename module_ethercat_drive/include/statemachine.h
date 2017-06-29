@@ -19,9 +19,12 @@
 #define CTRL_COMMUNICATION_TIMEOUT     0x8000
 #define CTRL_FAULT_REACTION_FINISHED   0x4000
 
+#ifndef BOOL_AS_INT
+#define BOOL_AS_INT 0
 typedef int bool;
 #define true 1
 #define false 0
+#endif
 
 //#define S_NOT_READY_TO_SWITCH_ON    1
 //#define S_SWITCH_ON_DISABLED        2

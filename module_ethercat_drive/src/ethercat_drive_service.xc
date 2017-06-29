@@ -415,7 +415,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
     uint8_t polarity = 0;
 
     PositionFeedbackConfig position_feedback_config_1 = i_position_feedback_1.get_config();
-    PositionFeedbackConfig position_feedback_config_2;
+    PositionFeedbackConfig position_feedback_config_2 = i_position_feedback_2.get_config();
 
     MotorcontrolConfig motorcontrol_config = i_torque_control.get_config();
     UpstreamControlData   send_to_master = { 0 };
