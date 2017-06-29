@@ -76,6 +76,9 @@ static int get_cia402_error_code(FaultCode motorcontrol_fault, SensorError motio
             case MIN_TARGET_POSITION_EXCEEDED:
                 error_code = ERROR_CODE_MIN_TARGET_POSITION_EXCEEDED;
                 break;
+            case MOTION_CONTROL_SOFT_STOP_REACHED:
+                error_code = ERROR_CODE_SOFT_STOP_REACHED;
+                break;
             case MOTION_CONTROL_HARD_STOP_REACHED:
                 error_code = ERROR_CODE_ACTUAL_POSITION_OUT_OF_BOUNDS;
                 break;
@@ -752,7 +755,8 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
 
             case S_FAULT_REACTION_ACTIVE:
                 /* a fault is detected, perform fault recovery actions like a quick_stop */
-                if(motorcontrol_fault != NO_FAULT || (commutation_sensor_error != SENSOR_NO_ERROR && motion_sensor_error != SENSOR_NO_ERROR)){
+                if(motion_control_error != MOTION_CONTROL_NO_ERROR ||
+                        motorcontrol_fault != NO_FAULT || (commutation_sensor_error != SENSOR_NO_ERROR && motion_sensor_error != SENSOR_NO_ERROR)){
                     if (quick_stop_steps == 0) {
                         quick_stop_steps = quick_stop_init(opmode, actual_position, actual_velocity, actual_torque, sensor_resolution, quick_stop_deceleration);
                         quick_stop_step = 0;
@@ -808,7 +812,8 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                  */
                  if (read_controlword_fault_reset(controlword) && checklist.fault_reset_wait == false) {
 #ifdef DEBUG_PRINT_ECAT
-                      printf("Clear Error received\n");
+                         printf("Clear Error received\n");
+
 #endif
                         //reset fault in motorcontrol
                         if (motorcontrol_fault != NO_FAULT) {
@@ -824,8 +829,9 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                             checklist.fault_reset_wait = true;
                         }
                         //reset fault in position feedback
-                        if (motion_control_error != MOTION_CONTROL_NO_ERROR) {
+                        if (checklist.motion_control_fault == false) {
                             i_motion_control.set_motion_control_config(motion_control_config);
+                            checklist.fault_reset_wait = true;
                         }
                         //start timer
                         fault_reset_wait_time = time + 1000000*tile_usec; //wait 1s before restarting the motorcontrol
