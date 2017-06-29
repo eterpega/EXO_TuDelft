@@ -116,6 +116,7 @@ int main(void)
 
                     motion_ctrl_config.min_pos_range_limit =                  MIN_POSITION_RANGE_LIMIT;
                     motion_ctrl_config.max_pos_range_limit =                  MAX_POSITION_RANGE_LIMIT;
+                    motion_ctrl_config.soft_stop_threshold =                  SOFT_STOP_THRESHOLD;
                     motion_ctrl_config.max_motor_speed =                      MOTOR_MAX_SPEED;
                     motion_ctrl_config.polarity =                             POLARITY;
 
