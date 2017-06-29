@@ -30,7 +30,7 @@
 //Position control + profile libs
 #include <motion_control_service.h>
 #include <profile_control.h>
-
+#include <sanity_check.h>
 
 EthercatPorts ethercat_ports = SOMANET_COM_ETHERCAT_PORTS;
 PwmPorts pwm_ports = SOMANET_IFM_PWM_PORTS;
@@ -45,6 +45,7 @@ port ?gpio_port_0 = SOMANET_IFM_GPIO_D0;
 port ?gpio_port_1 = SOMANET_IFM_GPIO_D1;
 port ?gpio_port_2 = SOMANET_IFM_GPIO_D2;
 port ?gpio_port_3 = SOMANET_IFM_GPIO_D3;
+
 
 int main(void)
 {
@@ -152,6 +153,9 @@ int main(void)
                     motion_ctrl_config.pull_brake_time =                      PULL_BRAKE_TIME;
                     motion_ctrl_config.hold_brake_voltage =                   HOLD_BRAKE_VOLTAGE;
 
+                    //check_motion_config(motion_control_config);
+
+
                     motion_control_service(motion_ctrl_config, i_torque_control[0], i_motion_control, i_update_brake);
                 }
             }
@@ -219,6 +223,8 @@ int main(void)
                     motorcontrol_config.protection_limit_over_voltage =  PROTECTION_MAXIMUM_VOLTAGE;
                     motorcontrol_config.protection_limit_under_voltage = PROTECTION_MINIMUM_VOLTAGE;
                     motorcontrol_config.protection_limit_over_temperature = TEMP_BOARD_MAX;
+
+                    //check_motor_config(motorcontrol_config);
 
                     torque_control_service(motorcontrol_config, i_adc[0], i_shared_memory[2],
                             i_watchdog[0], i_torque_control, i_update_pwm, IFM_TILE_USEC);

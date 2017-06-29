@@ -794,6 +794,10 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                         //TODO put proper error message
                         send_to_master.last_sensor_error = 21;
                         state = S_SENSOR_FAULT;
+                } else {
+                    printstrln("Derpity derp. Im a bad somanet, and im gonna make a bad transition now. Is there any fault?");
+                    printintln(any_fault(checklist));
+                    state = S_OPERATION_ENABLE;
                 }
 
 #ifdef DEBUG_PRINT_ECAT
