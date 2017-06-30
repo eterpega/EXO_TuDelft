@@ -9,7 +9,7 @@
 #include <ctype.h>
 #include <state_modes.h>
 #include <ethercat_drive_service.h>
-
+#include <sanity_check.h>
 void debug_print(TuningModeState  &tuning_mode_state)
 {
     char name[20];
@@ -254,9 +254,9 @@ void tuning_command_handler(
 
     /* execute command */
     if (tuning_mode_state.command & TUNING_CMD_SET_PARAM_MASK) { //set parameter commands
-        printf("Previous: \n");
 #ifdef DEBUG_PRINT_ECAT
-    debug_print(tuning_mode_state);
+        printf("Previous: \n");
+        debug_print(tuning_mode_state);
 #endif
         switch(tuning_mode_state.command) {
         case TUNING_CMD_POSITION_KP:
@@ -360,6 +360,8 @@ void tuning_command_handler(
         if (tuning_mode_state.command & TUNING_CMD_SET_MOTOR_CONTROL_MASK) {
             tuning_mode_state.brake_flag = 0;
             tuning_mode_state.motorctrl_status = TUNING_MOTORCTRL_OFF;
+
+
             i_motion_control.set_motorcontrol_config(motorcontrol_config);
         }
 
@@ -483,7 +485,15 @@ void tuning_command_handler(
             break;
 
         } /* end switch action command*/
+#ifdef DEBUG_PRINT_ECAT
+        check_motion_config(i_motion_control.get_motion_control_config());
+        check_motor_config(i_motion_control.get_motorcontrol_config());
+        check_position_config(i_position_feedback_1.get_config());
+#endif
     } /* end if setting/action command */
+
+
+
 #ifdef DEBUG_PRINT_ECAT
     debug_print(tuning_mode_state);
 #endif

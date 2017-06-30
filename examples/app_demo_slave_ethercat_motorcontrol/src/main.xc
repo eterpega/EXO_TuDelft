@@ -90,6 +90,7 @@ int main(void)
             delay_milliseconds(1000);
             check_motion_config(i_motion_control[0].get_motion_control_config());
             check_motor_config(i_motion_control[0].get_motorcontrol_config());
+            check_position_config(i_position_feedback_1[1].get_config());
 
             ProfilerConfig profiler_config;
 
