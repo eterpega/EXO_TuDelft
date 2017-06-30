@@ -76,6 +76,8 @@ int main(void)
         on tile[COM_TILE] :
         {
             par {
+
+
                 ethercat_service(i_ecat_reboot, i_coe, null,
                                     i_foe, i_pdo, ethercat_ports);
                 reboot_service_ethercat(i_ecat_reboot);
@@ -85,6 +87,10 @@ int main(void)
         /* EtherCAT Motor Drive Loop */
         on tile[APP_TILE_1] :
         {
+            delay_milliseconds(1000);
+            check_motion_config(i_motion_control[0].get_motion_control_config());
+            check_motor_config(i_motion_control[0].get_motorcontrol_config());
+
             ProfilerConfig profiler_config;
 
             profiler_config.max_position = MAX_POSITION_RANGE_LIMIT;   /* Set by Object Dictionary value! */
@@ -93,6 +99,8 @@ int main(void)
             profiler_config.max_velocity = MOTOR_MAX_SPEED;
             profiler_config.max_acceleration = MAX_ACCELERATION_PROFILER;
             profiler_config.max_deceleration = MAX_DECELERATION_PROFILER;
+
+
 
 #if 0
             ethercat_drive_service_debug( profiler_config,
@@ -153,7 +161,6 @@ int main(void)
                     motion_ctrl_config.pull_brake_time =                      PULL_BRAKE_TIME;
                     motion_ctrl_config.hold_brake_voltage =                   HOLD_BRAKE_VOLTAGE;
 
-                    //check_motion_config(motion_control_config);
 
 
                     motion_control_service(motion_ctrl_config, i_torque_control[0], i_motion_control, i_update_brake);
@@ -224,7 +231,6 @@ int main(void)
                     motorcontrol_config.protection_limit_under_voltage = PROTECTION_MINIMUM_VOLTAGE;
                     motorcontrol_config.protection_limit_over_temperature = TEMP_BOARD_MAX;
 
-                    //check_motor_config(motorcontrol_config);
 
                     torque_control_service(motorcontrol_config, i_adc[0], i_shared_memory[2],
                             i_watchdog[0], i_torque_control, i_update_pwm, IFM_TILE_USEC);
