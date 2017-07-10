@@ -496,7 +496,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         opmode_request  = pdo_get_op_mode(InOut);
         target_position = pdo_get_target_position(InOut);
         target_velocity = pdo_get_target_velocity(InOut);
-        target_torque   = (pdo_get_target_torque(InOut)*motorcontrol_config.rated_torque) / 1000; //target torque received in 1/1000 of rated torque
+        target_torque   = pdo_get_target_torque(InOut);//*motorcontrol_config.rated_torque) / 1000; //target torque received in 1/1000 of rated torque
         send_to_control.offset_torque = pdo_get_offset_torque(InOut); /* FIXME send this to the controll */
 #ifdef DEBUG_PRINT_ECAT
         if(last_opmode != opmode_request){
@@ -567,7 +567,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         /* i_motion_control.get_all_feedbacks; */
         actual_velocity = send_to_master.velocity; //i_motion_control.get_velocity();
         actual_position = send_to_master.position; //i_motion_control.get_position();
-        actual_torque   = (send_to_master.computed_torque*1000) / motorcontrol_config.rated_torque; //torque sent to master in 1/1000 of rated torque
+        actual_torque   = send_to_master.computed_torque;//*1000) / motorcontrol_config.rated_torque; //torque sent to master in 1/1000 of rated torque
         FaultCode motorcontrol_fault = send_to_master.error_status;
         SensorError motion_sensor_error = send_to_master.last_sensor_error; // last is only triggered when the error happened 100 times
         SensorError commutation_sensor_error = send_to_master.angle_last_sensor_error;
@@ -756,7 +756,10 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
             case S_FAULT_REACTION_ACTIVE:
                 /* a fault is detected, perform fault recovery actions like a quick_stop */
                 if(motion_control_error != MOTION_CONTROL_NO_ERROR ||
-                        motorcontrol_fault != NO_FAULT || (commutation_sensor_error != SENSOR_NO_ERROR && motion_sensor_error != SENSOR_NO_ERROR)){
+                        motorcontrol_fault != NO_FAULT || (commutation_sensor_error != SENSOR_NO_ERROR && motion_sensor_error != SENSOR_NO_ERROR) || inactive_timeout_flag == 1){
+                    if (inactive_timeout_flag == 1){
+                        printstrln("Lost communication with master.");
+                    }
                     if (quick_stop_steps == 0) {
                         quick_stop_steps = quick_stop_init(opmode, actual_position, actual_velocity, actual_torque, sensor_resolution, quick_stop_deceleration);
                         quick_stop_step = 0;
@@ -802,7 +805,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
 
 #ifdef DEBUG_PRINT_ECAT
                 if(state != S_FAULT_REACTION_ACTIVE){
-                    printf("Motorcontrol Fault: %04X\nMotion Sensor Error %04X\nCommutation Sensor Error %04X\n",motorcontrol_fault,motion_sensor_error,commutation_sensor_error);
+                    printf("Motorcontrol Fault: %04X\nMotion Sensor Error %04X\nCommutation Sensor Error %04X\nMotion Control Error %04X\n",motorcontrol_fault,motion_sensor_error,commutation_sensor_error,motion_control_error);
                 }
 #endif
                 break;
