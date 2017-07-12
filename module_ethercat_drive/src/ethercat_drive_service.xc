@@ -362,6 +362,8 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
     int actual_position = 0;
     int follow_error = 0;
     uint16_t last_statusword = 0;
+    float sensor_scale,sensor_scale_2to1 = 1.0;
+    int sensor_offset,sensor_offset_2to1 = 0;
 
     //int target_position_progress = 0; /* is current target_position necessary to remember??? */
 
@@ -452,6 +454,8 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
      *
      * This should be done before we configure anything.
      */
+    printf("Hello\n");
+
     sdo_wait_first_config(i_coe);
 
     /* if we reach this point the EtherCAT service is considered in OPMODE */
@@ -460,6 +464,13 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
     /* start operation */
     int read_configuration = 1;
 
+    sensor_scale_2to1 = (float) position_feedback_config_1.resolution/(float) position_feedback_config_2.resolution;
+//    float pos_1,pos_2;
+//    {pos_1,void,void} = i_position_feedback_1.get_position();
+//    {pos_2,void,void} = i_position_feedback_2.get_position();
+//    sensor_offset_2to1 = (int)pos_2* sensor_scale_2to1 - pos_1;
+//    printf("Sensor Scale : %f\n",sensor_scale_2to1);
+//    printf("Sensor Offset: %d\n",sensor_offset_2to1);
     t :> time;
     while (1) {
 //#pragma xta endpoint "ecatloop"
@@ -495,12 +506,19 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
          */
         controlword     = pdo_get_controlword(InOut);
         opmode_request  = pdo_get_op_mode(InOut);
-        if (state != S_SENSOR_FAULT){
+        if (state == S_SENSOR_FAULT){
+            target_position = (int) (sensor_scale * (float) pdo_get_target_position(InOut))+sensor_offset;
+            target_velocity = (int) (sensor_scale * (float) pdo_get_target_velocity(InOut));
+            printintln(target_position);
+            printintln(target_velocity);
+        }
+        else{
             target_position = pdo_get_target_position(InOut);
             target_velocity = pdo_get_target_velocity(InOut);
-            target_torque   = pdo_get_target_torque(InOut);//*motorcontrol_config.rated_torque) / 1000; //target torque received in 1/1000 of rated torque
+            }
+        target_torque   = pdo_get_target_torque(InOut);//*motorcontrol_config.rated_torque) / 1000; //target torque received in 1/1000 of rated torque
 
-        }
+
         send_to_control.offset_torque = pdo_get_offset_torque(InOut); /* FIXME send this to the controll */
 #ifdef DEBUG_PRINT_ECAT
         if(last_opmode != opmode_request){
@@ -569,8 +587,15 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         send_to_master = i_motion_control.update_control_data(send_to_control);
 
         /* i_motion_control.get_all_feedbacks; */
-        actual_velocity = send_to_master.velocity; //i_motion_control.get_velocity();
-        actual_position = send_to_master.position; //i_motion_control.get_position();
+        if (state == S_SENSOR_FAULT){
+            actual_velocity = (int)((1/sensor_scale)*(1/sensor_scale)*(float)send_to_master.velocity); //i_motion_control.get_velocity();
+            actual_position = (int) ((1/sensor_scale)*(1/sensor_scale)*send_to_master.position)-sensor_offset; //i_motion_control.get_position();
+
+        }else{
+            actual_velocity = send_to_master.velocity; //i_motion_control.get_velocity();
+            actual_position = send_to_master.position; //i_motion_control.get_position();
+
+        }
         actual_torque   = send_to_master.computed_torque;//*1000) / motorcontrol_config.rated_torque; //torque sent to master in 1/1000 of rated torque
         FaultCode motorcontrol_fault = send_to_master.error_status;
         SensorError motion_sensor_error = send_to_master.last_sensor_error; // last is only triggered when the error happened 100 times
@@ -784,6 +809,8 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
 #endif
                         position_feedback_config_2.sensor_function = SENSOR_FUNCTION_DISABLED;
                         position_feedback_config_1.sensor_function = SENSOR_FUNCTION_COMMUTATION_AND_MOTION_CONTROL;
+                        sensor_offset = sensor_offset_2to1;
+                        sensor_scale = sensor_scale_2to1;
 
                         i_position_feedback_1.set_config(position_feedback_config_1);
                         i_position_feedback_2.set_config(position_feedback_config_2);
@@ -793,13 +820,6 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                             motion_control_config.polarity = MOTION_POLARITY_INVERTED;
                         }
                         i_motion_control.set_motion_control_config(motion_control_config);
-                        printintln(target_position);
-                         {target_position,void,void} = i_position_feedback_1.get_position();
-                         printintln(target_position);
-                         target_velocity = 0;
-                         send_to_control.position_cmd = target_position;
-                         send_to_control.velocity_cmd = target_velocity;
-                         i_motion_control.update_control_data(send_to_control);
 
                         state = S_SENSOR_FAULT;
                 } else {
@@ -888,12 +908,13 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                   //We should actually check the inital config and not use the user_config.h but for now it should be fine
                   position_feedback_config_1.sensor_function = SENSOR_1_FUNCTION;
                   position_feedback_config_2.sensor_function = SENSOR_2_FUNCTION;
-
+                  motion_control_config.polarity = POLARITY;
+                  sensor_offset = 1.0;
+                  sensor_scale = 1.0;
 
                   i_position_feedback_1.set_config(position_feedback_config_1);
                   i_position_feedback_2.set_config(position_feedback_config_2);
 
-                  motion_control_config.polarity = POLARITY;
 
                   i_motion_control.set_motion_control_config(motion_control_config);
                   checklist.fault_reset_wait = true;
