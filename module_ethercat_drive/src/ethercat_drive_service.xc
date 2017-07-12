@@ -362,8 +362,10 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
     int actual_position = 0;
     int follow_error = 0;
     uint16_t last_statusword = 0;
-    float sensor_scale,sensor_scale_2to1 = 1.0;
-    int sensor_offset,sensor_offset_2to1 = 0;
+    float sensor_scale= 0;
+    float sensor_scale_2to1 = 1.0;
+    int sensor_offset =0;
+    int sensor_offset_2to1 = 0;
 
     //int target_position_progress = 0; /* is current target_position necessary to remember??? */
 
@@ -506,17 +508,16 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
          */
         controlword     = pdo_get_controlword(InOut);
         opmode_request  = pdo_get_op_mode(InOut);
+        target_position = pdo_get_target_position(InOut);
+        target_velocity = pdo_get_target_velocity(InOut);
+        target_torque   = pdo_get_target_torque(InOut);//*motorcontrol_config.rated_torque) / 1000; //target torque received in 1/1000 of rated torque
         if (sensor_offset > 0){
-            target_position = (int) (sensor_scale * (float) pdo_get_target_position(InOut))-sensor_offset;
-            target_velocity = (int) (sensor_scale * (float) pdo_get_target_velocity(InOut));
+            target_position = (int) (sensor_scale * (float) target_position)-sensor_offset;
             //printintln(target_position);
             //printintln(target_velocity);
         }
-        else{
-            target_position = pdo_get_target_position(InOut);
-            target_velocity = pdo_get_target_velocity(InOut);
-            }
-        target_torque   = pdo_get_target_torque(InOut);//*motorcontrol_config.rated_torque) / 1000; //target torque received in 1/1000 of rated torque
+
+
 
 
         send_to_control.offset_torque = pdo_get_offset_torque(InOut); /* FIXME send this to the controll */
@@ -588,7 +589,6 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
 
         /* i_motion_control.get_all_feedbacks; */
         if (sensor_offset > 0){
-            actual_velocity = (int)((1/sensor_scale)*(float)send_to_master.velocity); //i_motion_control.get_velocity();
             actual_position = (int) ((1/sensor_scale)*send_to_master.position)+sensor_offset; //i_motion_control.get_position();
 
         }else{
@@ -812,14 +812,15 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                         sensor_offset = sensor_offset_2to1;
                         sensor_scale = sensor_scale_2to1;
 
+                          motion_control_config.position_kp = (int)((float)motion_control_config.position_kp / sensor_scale_2to1);
+                          motion_control_config.position_ki = (int)((float)motion_control_config.position_ki / sensor_scale_2to1);
+                          motion_control_config.position_kd = (int)((float)motion_control_config.position_kd / sensor_scale_2to1);
+
                         i_position_feedback_1.set_config(position_feedback_config_1);
                         i_position_feedback_2.set_config(position_feedback_config_2);
-                        if (position_feedback_config_2.polarity == 1){
-                            motion_control_config.polarity = MOTION_POLARITY_NORMAL;
-                        }else {
-                            motion_control_config.polarity = MOTION_POLARITY_INVERTED;
-                        }
+
                         i_motion_control.set_motion_control_config(motion_control_config);
+
 
                         state = S_SENSOR_FAULT;
                 } else {
@@ -909,11 +910,16 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                   position_feedback_config_1.sensor_function = SENSOR_1_FUNCTION;
                   position_feedback_config_2.sensor_function = SENSOR_2_FUNCTION;
                   motion_control_config.polarity = POLARITY;
-                  sensor_offset = 1.0;
+                  sensor_offset = 0;
                   sensor_scale = 1.0;
 
                   i_position_feedback_1.set_config(position_feedback_config_1);
                   i_position_feedback_2.set_config(position_feedback_config_2);
+
+
+                  motion_control_config.position_kp = (int)((float)motion_control_config.position_kp *sensor_scale_2to1);
+                  motion_control_config.position_ki = (int)((float)motion_control_config.position_ki *sensor_scale_2to1);
+                  motion_control_config.position_kd = (int)((float)motion_control_config.position_kd *sensor_scale_2to1);
 
 
                   i_motion_control.set_motion_control_config(motion_control_config);
