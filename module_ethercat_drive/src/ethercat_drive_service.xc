@@ -378,6 +378,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
     int last_target_pos = 0;
     int last_target_vel = 0;
     int last_target_torque = 0;
+    int fault_resolve_print = 0;
 #endif
     MotionControlConfig motion_control_config = i_motion_control.get_motion_control_config();
 
@@ -572,7 +573,6 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         SensorError motion_sensor_error = send_to_master.last_sensor_error; // last is only triggered when the error happened 100 times
         SensorError commutation_sensor_error = send_to_master.angle_last_sensor_error;
         MotionControlError motion_control_error = send_to_master.motion_control_error;
-
 //        xscope_int(TARGET_POSITION, send_to_control.position_cmd);
 //        xscope_int(ACTUAL_POSITION, actual_position);
 //        xscope_int(FAMOUS_FAULT, motorcontrol_fault * 1000);
@@ -755,6 +755,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
 
             case S_FAULT_REACTION_ACTIVE:
                 /* a fault is detected, perform fault recovery actions like a quick_stop */
+
                 if(motion_control_error != MOTION_CONTROL_NO_ERROR ||
                         motorcontrol_fault != NO_FAULT || (commutation_sensor_error != SENSOR_NO_ERROR && motion_sensor_error != SENSOR_NO_ERROR) || inactive_timeout_flag == 1){
                     if (inactive_timeout_flag == 1){
@@ -873,7 +874,10 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                 if (read_controlword_fault_reset(controlword) && checklist.fault_reset_wait == false) {
 
 #ifdef DEBUG_PRINT_ECAT
-                   printf(">> Trying to resolve sensor error. Changing back sensor config\n");
+                   if (fault_resolve_print == 0){
+                       printf(">> Trying to resolve sensor error. Changing back sensor config\n");
+                       fault_resolve_print =1;
+                   }
 #endif
                   //We should actually check the inital config and not use the user_config.h but for now it should be fine
                   position_feedback_config_1.sensor_function = SENSOR_1_FUNCTION;
@@ -891,6 +895,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
 #ifdef DEBUG_PRINT_ECAT
                    printf("Fault resolved!\nMotorcontrol error: %04X\nMotion Sensor Error %04X\nCommutation Sensor Error %04X\n",motorcontrol_fault,motion_sensor_error,commutation_sensor_error);
                    debug_print_state(state);
+                   fault_resolve_print = 0;
 #endif
                }
 #ifdef DEBUG_PRINT_ECAT
