@@ -308,6 +308,9 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_ssi/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_ssi/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_ssi}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_sanity_check/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_sanity_check/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_sanity_check}&quot;"/>
 								</option>
 								<inputType id="com.xmos.cdt.xc.compiler.input.486157097" name="XC" superClass="com.xmos.cdt.xc.compiler.input"/>
 							</tool>
@@ -744,6 +747,9 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_ssi/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_ssi/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_ssi}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_sanity_check/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_sanity_check/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_sanity_check}&quot;"/>
 								</option>
 								<inputType id="com.xmos.cdt.c.compiler.input.c.431923164" name="C" superClass="com.xmos.cdt.c.compiler.input.c"/>
 							</tool>
@@ -1185,6 +1191,9 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_ssi/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_ssi/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_ssi}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_sanity_check/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_sanity_check/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_sanity_check}&quot;"/>
 								</option>
 								<inputType id="com.xmos.cdt.cxx.compiler.input.cpp.1677795949" name="C++" superClass="com.xmos.cdt.cxx.compiler.input.cpp"/>
 							</tool>

@@ -495,9 +495,12 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
          */
         controlword     = pdo_get_controlword(InOut);
         opmode_request  = pdo_get_op_mode(InOut);
-        target_position = pdo_get_target_position(InOut);
-        target_velocity = pdo_get_target_velocity(InOut);
-        target_torque   = pdo_get_target_torque(InOut);//*motorcontrol_config.rated_torque) / 1000; //target torque received in 1/1000 of rated torque
+        if (state != S_SENSOR_FAULT){
+            target_position = pdo_get_target_position(InOut);
+            target_velocity = pdo_get_target_velocity(InOut);
+            target_torque   = pdo_get_target_torque(InOut);//*motorcontrol_config.rated_torque) / 1000; //target torque received in 1/1000 of rated torque
+
+        }
         send_to_control.offset_torque = pdo_get_offset_torque(InOut); /* FIXME send this to the controll */
 #ifdef DEBUG_PRINT_ECAT
         if(last_opmode != opmode_request){
@@ -757,10 +760,11 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                 /* a fault is detected, perform fault recovery actions like a quick_stop */
 
                 if(motion_control_error != MOTION_CONTROL_NO_ERROR ||
-                        motorcontrol_fault != NO_FAULT || (commutation_sensor_error != SENSOR_NO_ERROR && motion_sensor_error != SENSOR_NO_ERROR) || inactive_timeout_flag == 1){
+                        motorcontrol_fault != NO_FAULT || commutation_sensor_error != SENSOR_NO_ERROR || inactive_timeout_flag == 1){
                     if (inactive_timeout_flag == 1){
                         printstrln("Lost communication with master.");
                     }
+                    inactive_timeout_flag = 0;
                     if (quick_stop_steps == 0) {
                         quick_stop_steps = quick_stop_init(opmode, actual_position, actual_velocity, actual_torque, sensor_resolution, quick_stop_deceleration);
                         quick_stop_step = 0;
@@ -773,30 +777,30 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                         quick_stop_steps = 0;
                         i_motion_control.disable();
                     }
-                }else if (commutation_sensor_error != SENSOR_NO_ERROR){
-
-                        //Switch to position sensor and try to keep setpoint
-#ifdef DEBUG_PRINT_ECAT
-                        printf(">> Commutation sensor error. Using position sensor for commutation and motion\n");
-#endif
-                        position_feedback_config_1.sensor_function = SENSOR_FUNCTION_COMMUTATION_AND_MOTION_CONTROL;
-                        position_feedback_config_2.sensor_function = SENSOR_FUNCTION_DISABLED;
-                        i_position_feedback_1.set_config(position_feedback_config_1);
-                        i_position_feedback_2.set_config(position_feedback_config_2);
-                        //TODO put proper error message
-                        send_to_master.angle_last_sensor_error = 21;
-                        state = S_SENSOR_FAULT;
                 }else if(motion_sensor_error != SENSOR_NO_ERROR){
                         //Switch to position sensor and try to keep setpoint
 #ifdef DEBUG_PRINT_ECAT
                     printf(">> Motion sensor error. Using commutation sensor for commutation and motion\n");
 #endif
-                        position_feedback_config_2.sensor_function = SENSOR_FUNCTION_COMMUTATION_AND_MOTION_CONTROL;
-                        position_feedback_config_1.sensor_function = SENSOR_FUNCTION_DISABLED;
+                        position_feedback_config_2.sensor_function = SENSOR_FUNCTION_DISABLED;
+                        position_feedback_config_1.sensor_function = SENSOR_FUNCTION_COMMUTATION_AND_MOTION_CONTROL;
+
                         i_position_feedback_1.set_config(position_feedback_config_1);
                         i_position_feedback_2.set_config(position_feedback_config_2);
-                        //TODO put proper error message
-                        send_to_master.last_sensor_error = 21;
+                        if (position_feedback_config_2.polarity == 1){
+                            motion_control_config.polarity = MOTION_POLARITY_NORMAL;
+                        }else {
+                            motion_control_config.polarity = MOTION_POLARITY_INVERTED;
+                        }
+                        i_motion_control.set_motion_control_config(motion_control_config);
+                        printintln(target_position);
+                         {target_position,void,void} = i_position_feedback_1.get_position();
+                         printintln(target_position);
+                         target_velocity = 0;
+                         send_to_control.position_cmd = target_position;
+                         send_to_control.velocity_cmd = target_velocity;
+                         i_motion_control.update_control_data(send_to_control);
+
                         state = S_SENSOR_FAULT;
                 } else {
                     printstrln("Derpity derp. Im a bad somanet, and im gonna make a bad transition now. Is there any fault?");
@@ -830,6 +834,8 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                         }
                         //reset fault in position feedback
                         if (motion_sensor_error != SENSOR_NO_ERROR || commutation_sensor_error != SENSOR_NO_ERROR) {
+                            position_feedback_config_1.sensor_function = SENSOR_1_FUNCTION;
+                            position_feedback_config_2.sensor_function = SENSOR_2_FUNCTION;
                             if (!isnull(i_position_feedback_2)) {
                                 i_position_feedback_2.set_config(position_feedback_config_2);
                             }
@@ -883,9 +889,14 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                   position_feedback_config_1.sensor_function = SENSOR_1_FUNCTION;
                   position_feedback_config_2.sensor_function = SENSOR_2_FUNCTION;
 
+
                   i_position_feedback_1.set_config(position_feedback_config_1);
                   i_position_feedback_2.set_config(position_feedback_config_2);
-                  checklist.fault_reset_wait == true;
+
+                  motion_control_config.polarity = POLARITY;
+
+                  i_motion_control.set_motion_control_config(motion_control_config);
+                  checklist.fault_reset_wait = true;
 
                 }
                 state = get_next_state(state,checklist,controlword,0);
@@ -893,7 +904,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                if(state != S_SENSOR_FAULT){
                    checklist.fault_reset_wait = false;
 #ifdef DEBUG_PRINT_ECAT
-                   printf("Fault resolved!\nMotorcontrol error: %04X\nMotion Sensor Error %04X\nCommutation Sensor Error %04X\n",motorcontrol_fault,motion_sensor_error,commutation_sensor_error);
+                   printf("Motorcontrol error: %04X\nMotion Sensor Error %04X\nCommutation Sensor Error %04X\n",motorcontrol_fault,motion_sensor_error,commutation_sensor_error);
                    debug_print_state(state);
                    fault_resolve_print = 0;
 #endif
