@@ -465,12 +465,12 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
     int read_configuration = 1;
 
     sensor_scale_2to1 = (float) position_feedback_config_1.resolution/(float) position_feedback_config_2.resolution;
-//    float pos_1,pos_2;
-//    {pos_1,void,void} = i_position_feedback_1.get_position();
-//    {pos_2,void,void} = i_position_feedback_2.get_position();
-//    sensor_offset_2to1 = (int)pos_2* sensor_scale_2to1 - pos_1;
-//    printf("Sensor Scale : %f\n",sensor_scale_2to1);
-//    printf("Sensor Offset: %d\n",sensor_offset_2to1);
+    float pos_1,pos_2;
+    {pos_1,void,void} = i_position_feedback_1.get_position();
+    {pos_2,void,void} = i_position_feedback_2.get_position();
+    sensor_offset_2to1 = (int)pos_2* sensor_scale_2to1 - pos_1;
+    printf("Sensor Scale : %f\n",sensor_scale_2to1);
+    printf("Sensor Offset: %d\n",sensor_offset_2to1);
     t :> time;
     while (1) {
 //#pragma xta endpoint "ecatloop"
@@ -506,11 +506,11 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
          */
         controlword     = pdo_get_controlword(InOut);
         opmode_request  = pdo_get_op_mode(InOut);
-        if (state == S_SENSOR_FAULT){
-            target_position = (int) (sensor_scale * (float) pdo_get_target_position(InOut))+sensor_offset;
+        if (sensor_offset > 0){
+            target_position = (int) (sensor_scale * (float) pdo_get_target_position(InOut))-sensor_offset;
             target_velocity = (int) (sensor_scale * (float) pdo_get_target_velocity(InOut));
-            printintln(target_position);
-            printintln(target_velocity);
+            //printintln(target_position);
+            //printintln(target_velocity);
         }
         else{
             target_position = pdo_get_target_position(InOut);
@@ -532,8 +532,8 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         }
         last_controlword = controlword;
         if(last_target_pos != target_position){
-//            printf("New Target Position: \n");
-//            printintln(target_position);
+            printf("New Target Position: \n");
+            printintln(target_position);
         }
         last_target_pos = target_position;
 #endif
@@ -587,9 +587,9 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         send_to_master = i_motion_control.update_control_data(send_to_control);
 
         /* i_motion_control.get_all_feedbacks; */
-        if (state == S_SENSOR_FAULT){
-            actual_velocity = (int)((1/sensor_scale)*(1/sensor_scale)*(float)send_to_master.velocity); //i_motion_control.get_velocity();
-            actual_position = (int) ((1/sensor_scale)*(1/sensor_scale)*send_to_master.position)-sensor_offset; //i_motion_control.get_position();
+        if (sensor_offset > 0){
+            actual_velocity = (int)((1/sensor_scale)*(float)send_to_master.velocity); //i_motion_control.get_velocity();
+            actual_position = (int) ((1/sensor_scale)*send_to_master.position)+sensor_offset; //i_motion_control.get_position();
 
         }else{
             actual_velocity = send_to_master.velocity; //i_motion_control.get_velocity();
