@@ -362,7 +362,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
     int actual_position = 0;
     int follow_error = 0;
     uint16_t last_statusword = 0;
-    float sensor_scale= 0;
+    float sensor_scale= 1;
     float sensor_scale_2to1 = 1.0;
     int sensor_offset =0;
     int sensor_offset_2to1 = 0;
@@ -591,13 +591,12 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
 
         /* i_motion_control.get_all_feedbacks; */
         if (sensor_offset > 0 || sensor_scale != 1.0){
-            actual_position = (int) ((1/sensor_scale)*send_to_master.position)+sensor_offset; //i_motion_control.get_position();
+            actual_position = (int) ((1/sensor_scale)*(float)send_to_master.position)+sensor_offset; //i_motion_control.get_position();
 
         }else{
-            actual_velocity = send_to_master.velocity; //i_motion_control.get_velocity();
             actual_position = send_to_master.position; //i_motion_control.get_position();
-
         }
+        actual_velocity = send_to_master.velocity; //i_motion_control.get_velocity();
         actual_torque   = send_to_master.computed_torque;//*1000) / motorcontrol_config.rated_torque; //torque sent to master in 1/1000 of rated torque
         FaultCode motorcontrol_fault = send_to_master.error_status;
         SensorError motion_sensor_error = send_to_master.last_sensor_error; // last is only triggered when the error happened 100 times
@@ -916,7 +915,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                   sensor_scale = 1.0;
                   float multiturn_pos;
                   {multiturn_pos,void,void} = i_position_feedback_1.get_position();
-                  i_position_feedback_2.set_position((int)((float)multiturn_pos/scale)+offset);
+                  i_position_feedback_2.set_position((int)((float)multiturn_pos/sensor_scale)+sensor_offset);
                   i_position_feedback_1.set_config(position_feedback_config_1);
                   i_position_feedback_2.set_config(position_feedback_config_2);
 
