@@ -466,7 +466,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
     /* start operation */
     int read_configuration = 1;
 
-    sensor_scale_2to1 = (float) position_feedback_config_1.resolution/(float) position_feedback_config_2.resolution;
+    sensor_scale_2to1 = (float) position_feedback_config_1.resolution/(float) (position_feedback_config_2.resolution*TRANSMISSION);
     float pos_1,pos_2;
     {pos_1,void,void} = i_position_feedback_1.get_position();
     {pos_2,void,void} = i_position_feedback_2.get_position();
@@ -912,7 +912,9 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                   motion_control_config.polarity = POLARITY;
                   sensor_offset = 0;
                   sensor_scale = 1.0;
-
+                  int multiturn_pos=0;
+                  {multiturn_pos,void,void} i_position_feedback_1.get_position();
+                  i_position_feedback_2.set_position(multiturn_pos);
                   i_position_feedback_1.set_config(position_feedback_config_1);
                   i_position_feedback_2.set_config(position_feedback_config_2);
 
