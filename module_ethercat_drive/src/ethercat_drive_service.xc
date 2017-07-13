@@ -908,12 +908,18 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                   //We should actually check the inital config and not use the user_config.h but for now it should be fine
                   position_feedback_config_1.sensor_function = SENSOR_1_FUNCTION;
                   position_feedback_config_2.sensor_function = SENSOR_2_FUNCTION;
+
+                  {multiturn_pos,void,void} = i_position_feedback_1.get_position();
+
+                    int scaled_pos_update = (int)((float)multiturn_pos/sensor_scale)+sensor_offset;
+
                   motion_control_config.polarity = POLARITY;
+
                   sensor_offset = 0;
                   sensor_scale = 1.0;
-                  float multiturn_pos;
-                  {multiturn_pos,void,void} = i_position_feedback_1.get_position();
-                  i_position_feedback_2.set_position((int)((float)multiturn_pos/sensor_scale)+sensor_offset);
+
+                  printintln(scaled_pos_update);
+                  i_position_feedback_2.set_position(scaled_pos_update);
                   i_position_feedback_1.set_config(position_feedback_config_1);
                   i_position_feedback_2.set_config(position_feedback_config_2);
 
