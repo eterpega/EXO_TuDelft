@@ -420,6 +420,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
     int sensor_resolution = 0;
     uint8_t polarity = 0;
 
+
     PositionFeedbackConfig position_feedback_config_1 = i_position_feedback_1.get_config();
     PositionFeedbackConfig position_feedback_config_2 = i_position_feedback_2.get_config();
 
@@ -456,7 +457,6 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
      *
      * This should be done before we configure anything.
      */
-    printf("Hello\n");
 
     sdo_wait_first_config(i_coe);
 
@@ -471,8 +471,10 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
     {pos_1,void,void} = i_position_feedback_1.get_position();
     {pos_2,void,void} = i_position_feedback_2.get_position();
     sensor_offset_2to1 = (int)pos_2* sensor_scale_2to1 - pos_1;
+#ifdef DEBUG_PRINT_ECAT
     printf("Sensor Scale : %f\n",sensor_scale_2to1);
     printf("Sensor Offset: %d\n",sensor_offset_2to1);
+#endif
     t :> time;
     while (1) {
 //#pragma xta endpoint "ecatloop"
@@ -588,7 +590,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         send_to_master = i_motion_control.update_control_data(send_to_control);
 
         /* i_motion_control.get_all_feedbacks; */
-        if (sensor_offset > 0){
+        if (sensor_offset > 0 || sensor_scale != 1.0){
             actual_position = (int) ((1/sensor_scale)*send_to_master.position)+sensor_offset; //i_motion_control.get_position();
 
         }else{
