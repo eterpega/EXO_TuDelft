@@ -513,7 +513,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         target_position = pdo_get_target_position(InOut);
         target_velocity = pdo_get_target_velocity(InOut);
         target_torque   = pdo_get_target_torque(InOut);//*motorcontrol_config.rated_torque) / 1000; //target torque received in 1/1000 of rated torque
-        if (sensor_offset > 0){
+        if (sensor_offset > 0 | sensor_scale != 1.0){
             target_position = (int) (sensor_scale * (float) target_position)-sensor_offset;
             //printintln(target_position);
             //printintln(target_velocity);
@@ -916,7 +916,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                   sensor_scale = 1.0;
                   float multiturn_pos;
                   {multiturn_pos,void,void} = i_position_feedback_1.get_position();
-                  i_position_feedback_2.set_position(multiturn_pos);
+                  i_position_feedback_2.set_position((int)((float)multiturn_pos/scale)+offset);
                   i_position_feedback_1.set_config(position_feedback_config_1);
                   i_position_feedback_2.set_config(position_feedback_config_2);
 
