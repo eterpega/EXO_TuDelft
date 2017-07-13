@@ -42,7 +42,7 @@ typedef struct
     int16_t phase_b_current;
     int16_t phase_c_current;
     int16_t core_temp;
-//TODO add max torque
+    uint16_t max_torque;
 } pdo_handler_values_t;
 
 int pdo_handler(client interface i_pdo_communication i_pdo, pdo_handler_values_t &InOut);
@@ -70,6 +70,8 @@ uint8_t pdo_get_digital_output3(pdo_handler_values_t InOut);
 uint8_t pdo_get_digital_output4(pdo_handler_values_t InOut);
 
 uint32_t pdo_get_user_mosi(pdo_handler_values_t InOut);
+
+uint16_t pdo_get_max_torque(pdo_handler_values_t InOut);
 
 void pdo_set_statusword(uint16_t value, pdo_handler_values_t &InOut);
 
@@ -114,3 +116,4 @@ void pdo_set_phase_b_current(int16_t value, pdo_handler_values_t &InOut);
 void pdo_set_phase_c_current(int16_t value, pdo_handler_values_t &InOut);
 
 void pdo_set_core_temp(int16_t value, pdo_handler_values_t &InOut);
+

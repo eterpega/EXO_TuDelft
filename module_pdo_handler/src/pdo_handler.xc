@@ -152,6 +152,11 @@ uint32_t pdo_get_user_mosi(pdo_handler_values_t InOut)
     return InOut.user_mosi;
 }
 
+uint16_t pdo_get_max_torque(pdo_handler_values_t InOut)
+{
+    return InOut.max_torque;
+}
+
 void pdo_set_statusword(uint16_t value, pdo_handler_values_t &InOut)
 {
     InOut.statusword = value;
@@ -176,6 +181,7 @@ void pdo_set_torque_value(int16_t value, pdo_handler_values_t &InOut)
 {
     InOut.torque_value = value;
 }
+
 
 void pdo_set_secondary_position_value(int32_t value, pdo_handler_values_t &InOut)
 {
