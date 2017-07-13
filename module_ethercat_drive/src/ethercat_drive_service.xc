@@ -513,7 +513,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         target_position = pdo_get_target_position(InOut);
         target_velocity = pdo_get_target_velocity(InOut);
         target_torque   = pdo_get_target_torque(InOut);//*motorcontrol_config.rated_torque) / 1000; //target torque received in 1/1000 of rated torque
-        if (sensor_offset > 0 | sensor_scale != 1.0){
+        if (sensor_offset > 0 || sensor_scale != 1.0){
             target_position = (int) (sensor_scale * (float) target_position)-sensor_offset;
             //printintln(target_position);
             //printintln(target_velocity);
@@ -591,11 +591,12 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
 
         /* i_motion_control.get_all_feedbacks; */
         if (sensor_offset > 0 || sensor_scale != 1.0){
-            actual_position = (int) ((1/sensor_scale)*(float)send_to_master.position)+sensor_offset; //i_motion_control.get_position();
+            actual_position = (int) ((float)send_to_master.position/sensor_scale)+sensor_offset; //i_motion_control.get_position();
 
         }else{
             actual_position = send_to_master.position; //i_motion_control.get_position();
         }
+
         actual_velocity = send_to_master.velocity; //i_motion_control.get_velocity();
         actual_torque   = send_to_master.computed_torque;//*1000) / motorcontrol_config.rated_torque; //torque sent to master in 1/1000 of rated torque
         FaultCode motorcontrol_fault = send_to_master.error_status;
@@ -785,25 +786,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
             case S_FAULT_REACTION_ACTIVE:
                 /* a fault is detected, perform fault recovery actions like a quick_stop */
 
-                if(motion_control_error != MOTION_CONTROL_NO_ERROR ||
-                        motorcontrol_fault != NO_FAULT || commutation_sensor_error != SENSOR_NO_ERROR || inactive_timeout_flag == 1){
-                    if (inactive_timeout_flag == 1){
-                        printstrln("Lost communication with master.");
-                    }
-                    inactive_timeout_flag = 0;
-                    if (quick_stop_steps == 0) {
-                        quick_stop_steps = quick_stop_init(opmode, actual_position, actual_velocity, actual_torque, sensor_resolution, quick_stop_deceleration);
-                        quick_stop_step = 0;
-                    }
-
-                    qs_target= quick_stop_perform(opmode, quick_stop_step);
-
-                    if (quick_stop_step > quick_stop_steps) {
-                        state = get_next_state(state, checklist, 0, CTRL_FAULT_REACTION_FINISHED);
-                        quick_stop_steps = 0;
-                        i_motion_control.disable();
-                    }
-                }else if(motion_sensor_error != SENSOR_NO_ERROR){
+                if(motion_sensor_error != SENSOR_NO_ERROR && motion_control_error == MOTION_CONTROL_NO_ERROR && motorcontrol_fault == NO_FAULT && commutation_sensor_error == SENSOR_NO_ERROR){
                         //Switch to position sensor and try to keep setpoint
 #ifdef DEBUG_PRINT_ECAT
                     printf(">> Motion sensor error. Using commutation sensor for commutation and motion\n");
@@ -825,9 +808,24 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
 
                         state = S_SENSOR_FAULT;
                 } else {
-                    printstrln("Derpity derp. Im a bad somanet, and im gonna make a bad transition now. Is there any fault?");
-                    printintln(any_fault(checklist));
-                    state = S_OPERATION_ENABLE;
+
+                        if (inactive_timeout_flag == 1){
+                            printstrln("Lost communication with master.");
+                        }
+                        inactive_timeout_flag = 0;
+                        if (quick_stop_steps == 0) {
+                            quick_stop_steps = quick_stop_init(opmode, actual_position, actual_velocity, actual_torque, sensor_resolution, quick_stop_deceleration);
+                            quick_stop_step = 0;
+                        }
+
+                        qs_target= quick_stop_perform(opmode, quick_stop_step);
+
+                        if (quick_stop_step > quick_stop_steps) {
+                            state = get_next_state(state, checklist, 0, CTRL_FAULT_REACTION_FINISHED);
+                            quick_stop_steps = 0;
+                            i_motion_control.disable();
+                        }
+
                 }
 
 #ifdef DEBUG_PRINT_ECAT
