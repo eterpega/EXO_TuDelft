@@ -809,10 +809,6 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                         state = S_SENSOR_FAULT;
                 } else {
 
-                        if (inactive_timeout_flag == 1){
-                            printstrln("Lost communication with master.");
-                        }
-                        inactive_timeout_flag = 0;
                         if (quick_stop_steps == 0) {
                             quick_stop_steps = quick_stop_init(opmode, actual_position, actual_velocity, actual_torque, sensor_resolution, quick_stop_deceleration);
                             quick_stop_step = 0;
@@ -909,9 +905,10 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                   position_feedback_config_1.sensor_function = SENSOR_1_FUNCTION;
                   position_feedback_config_2.sensor_function = SENSOR_2_FUNCTION;
 
+                  float multiturn_pos;
                   {multiturn_pos,void,void} = i_position_feedback_1.get_position();
 
-                    int scaled_pos_update = (int)((float)multiturn_pos/sensor_scale)+sensor_offset;
+                  int scaled_pos_update = (int)((float)multiturn_pos/sensor_scale)+sensor_offset;
 
                   motion_control_config.polarity = POLARITY;
 
