@@ -466,12 +466,13 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
     /* start operation */
     int read_configuration = 1;
 
-    sensor_scale_2to1 = (float) position_feedback_config_1.resolution/(float) (position_feedback_config_2.resolution*TRANSMISSION);
+    sensor_scale_2to1 =  ((float)(position_feedback_config_1.resolution*TRANSMISSION))/(float) (position_feedback_config_2.resolution);
     float pos_1,pos_2;
     {pos_1,void,void} = i_position_feedback_1.get_position();
     {pos_2,void,void} = i_position_feedback_2.get_position();
-    sensor_offset_2to1 = (int)pos_2* sensor_scale_2to1 - pos_1;
+    sensor_offset_2to1 = (int)(pos_2* sensor_scale_2to1) - pos_1;
 #ifdef DEBUG_PRINT_ECAT
+    printf("Motion Position %f\nCommutation Position %f\n",pos_2,pos_1);
     printf("Sensor Scale : %f\n",sensor_scale_2to1);
     printf("Sensor Offset: %d\n",sensor_offset_2to1);
 #endif
@@ -514,7 +515,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         target_velocity = pdo_get_target_velocity(InOut);
         target_torque   = pdo_get_target_torque(InOut);//*motorcontrol_config.rated_torque) / 1000; //target torque received in 1/1000 of rated torque
         if (sensor_offset > 0 || sensor_scale != 1.0){
-            target_position = (int) (sensor_scale * (float) target_position)-sensor_offset;
+            target_position = (int) ((sensor_scale * (float) target_position)-(float)sensor_offset);
             //printintln(target_position);
             //printintln(target_velocity);
         }
@@ -534,10 +535,10 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
             printintln(controlword);
         }
         last_controlword = controlword;
-        if(last_target_pos != target_position){
+        /*if(last_target_pos != target_position){
             printf("New Target Position: \n");
             printintln(target_position);
-        }
+        }*/
         last_target_pos = target_position;
 #endif
 
@@ -591,7 +592,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
 
         /* i_motion_control.get_all_feedbacks; */
         if (sensor_offset > 0 || sensor_scale != 1.0){
-            actual_position = (int) ((float)send_to_master.position/sensor_scale)+sensor_offset; //i_motion_control.get_position();
+            actual_position = (int) ((float)(send_to_master.position+sensor_offset)/sensor_scale); //i_motion_control.get_position();
 
         }else{
             actual_position = send_to_master.position; //i_motion_control.get_position();
@@ -790,21 +791,34 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                         //Switch to position sensor and try to keep setpoint
 #ifdef DEBUG_PRINT_ECAT
                     printf(">> Motion sensor error. Using commutation sensor for commutation and motion\n");
+                    float pos_comm,pos_motion;
+                    {pos_comm,void,void} =  i_position_feedback_1.get_position();
+                    {pos_motion,void,void} =  i_position_feedback_2.get_position();
+
+                    printf("Motion sensor : %f\n",pos_motion );
+                    printf("Commutation sensor: %f\n", pos_comm);
+                    printf("Upscaled from Commutation Position: %f\n", (pos_comm +  sensor_offset_2to1)/sensor_scale_2to1);
+                    printf("Downscaled Setpoint: %f\n", ((float)target_position*sensor_scale_2to1) - (float) sensor_offset_2to1);
 #endif
-                        position_feedback_config_2.sensor_function = SENSOR_FUNCTION_DISABLED;
-                        position_feedback_config_1.sensor_function = SENSOR_FUNCTION_COMMUTATION_AND_MOTION_CONTROL;
-                        sensor_offset = sensor_offset_2to1;
-                        sensor_scale = sensor_scale_2to1;
+                    position_feedback_config_2.sensor_function = SENSOR_FUNCTION_DISABLED;
+                    position_feedback_config_1.sensor_function = SENSOR_FUNCTION_COMMUTATION_AND_MOTION_CONTROL;
+                    sensor_offset = sensor_offset_2to1;
+                    sensor_scale = sensor_scale_2to1;
 
-                          motion_control_config.position_kp = (int)((float)motion_control_config.position_kp / sensor_scale_2to1);
-                          motion_control_config.position_ki = (int)((float)motion_control_config.position_ki / sensor_scale_2to1);
-                          motion_control_config.position_kd = (int)((float)motion_control_config.position_kd / sensor_scale_2to1);
+                      motion_control_config.position_kp = (int)((float)motion_control_config.position_kp / sensor_scale_2to1);
+                      motion_control_config.position_ki = (int)((float)motion_control_config.position_ki / sensor_scale_2to1);
+                      motion_control_config.position_kd = (int)((float)motion_control_config.position_kd / sensor_scale_2to1);
+                      motion_control_config.max_pos_range_limit = (int)(((float)motion_control_config.max_pos_range_limit*sensor_scale_2to1) -  (float)sensor_offset_2to1);
+                      motion_control_config.min_pos_range_limit = (int)(((float)motion_control_config.min_pos_range_limit*sensor_scale_2to1) -  (float)sensor_offset_2to1);
 
-                        i_position_feedback_1.set_config(position_feedback_config_1);
-                        i_position_feedback_2.set_config(position_feedback_config_2);
+                    i_position_feedback_1.set_config(position_feedback_config_1);
+                    i_position_feedback_2.set_config(position_feedback_config_2);
 
                         i_motion_control.set_motion_control_config(motion_control_config);
+#ifdef DEBUG_PRINT_ECAT
+                    printf("New position limits: %d, %d\n",  motion_control_config.max_pos_range_limit,motion_control_config.min_pos_range_limit);
 
+#endif
 
                         state = S_SENSOR_FAULT;
                 } else {
@@ -908,7 +922,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                   float multiturn_pos;
                   {multiturn_pos,void,void} = i_position_feedback_1.get_position();
 
-                  int scaled_pos_update = (int)((float)multiturn_pos/sensor_scale)+sensor_offset;
+                  float scaled_pos_update = (multiturn_pos/sensor_scale)+(float)sensor_offset;
 
                   motion_control_config.polarity = POLARITY;
 
@@ -924,6 +938,8 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                   motion_control_config.position_kp = (int)((float)motion_control_config.position_kp *sensor_scale_2to1);
                   motion_control_config.position_ki = (int)((float)motion_control_config.position_ki *sensor_scale_2to1);
                   motion_control_config.position_kd = (int)((float)motion_control_config.position_kd *sensor_scale_2to1);
+                  motion_control_config.max_pos_range_limit = (int)(((float)motion_control_config.max_pos_range_limit -  sensor_offset_2to1)/sensor_scale_2to1);
+                  motion_control_config.min_pos_range_limit = (int)(((float)motion_control_config.min_pos_range_limit -  sensor_offset_2to1)/sensor_scale_2to1);
 
 
                   i_motion_control.set_motion_control_config(motion_control_config);
