@@ -332,11 +332,11 @@ static void debug_print_state(DriveState_t state)
 #define UPDATE_VELOCITY_GAIN    0x000000f0
 #define UPDATE_TORQUE_GAIN      0x00000f00
 
-int scale_to_comm(int position,float scale_f,int offset){
-    return (int)((float)position*scale_f) + (float) offset;
+long long scale_to_comm(long long position,float scale_f,int offset){
+    return (long long)((long long)((float)position*scale_f)) + (long long) offset;
 }
-int scale_to_motion(int position,float scale_f,int offset){
-    return (int)(((float)position-offset)/scale_f);
+long long scale_to_motion(long long position,float scale_f,int offset){
+    return (long long)(((float)(position-(long long) offset))/scale_f);
 }
 /* NOTE:
  * - op mode change only when we are in "Ready to Swtich on" state or below (basically op mode is set locally in this state).
@@ -368,7 +368,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
     int follow_error = 0;
     uint16_t last_statusword = 0;
     float sensor_scale= 1.0;
-    int sensor_offset =0;
+    long long sensor_offset =0;
 
     //int target_position_progress = 0; /* is current target_position necessary to remember??? */
 
@@ -430,7 +430,18 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
     MotorcontrolConfig motorcontrol_config = i_torque_control.get_config();
     UpstreamControlData   send_to_master = { 0 };
     DownstreamControlData send_to_control = { 0 };
-
+    sensor_scale =  ((float)(position_feedback_config_1.resolution*TRANSMISSION))/(float) (position_feedback_config_2.resolution);
+    long long pos_1,pos_2;
+    {pos_1,void,void} = i_position_feedback_1.get_position();
+    {pos_2,void,void} = i_position_feedback_2.get_position();
+    sensor_offset = (long long)pos_1-(pos_2* sensor_scale);
+#ifdef DEBUG_PRINT_ECAT
+    printf("Motion Position %lld\nCommutation Position %lld\n",pos_2,pos_1);
+    printf("Sensor Scale : %f\n",sensor_scale);
+    printf("Sensor Offset: %d\n",sensor_offset);
+    printf("Upscaled from Commutation Position: %lld\n", scale_to_motion(pos_1,sensor_scale,sensor_offset));
+    printf("Downscaled Setpoint: %lld\n", scale_to_comm(pos_2,sensor_scale,sensor_offset));
+#endif
     /* read tile frequency
      * this needs to be after the first call to i_torque_control
      * so when we read it the frequency has already been changed by the torque controller
@@ -469,18 +480,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
     /* start operation */
     int read_configuration = 1;
 
-    sensor_scale =  ((float)(position_feedback_config_1.resolution*TRANSMISSION))/(float) (position_feedback_config_2.resolution);
-    float pos_1,pos_2;
-    {pos_1,void,void} = i_position_feedback_1.get_position();
-    {pos_2,void,void} = i_position_feedback_2.get_position();
-    sensor_offset = (int)pos_1-(pos_2* sensor_scale);
-#ifdef DEBUG_PRINT_ECAT
-    printf("Motion Position %f\nCommutation Position %f\n",pos_2,pos_1);
-    printf("Sensor Scale : %f\n",sensor_scale);
-    printf("Sensor Offset: %d\n",sensor_offset);
-    printf("Upscaled from Commutation Position: %f\n", scale_to_motion(pos_1,sensor_scale,sensor_offset));
-    printf("Downscaled Setpoint: %f\n", scale_to_comm(pos_2,sensor_scale,sensor_offset));
-#endif
+
     t :> time;
     while (1) {
 //#pragma xta endpoint "ecatloop"
@@ -522,9 +522,6 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         if (state == S_SENSOR_FAULT){
             target_position = scale_to_comm(target_position,sensor_scale,sensor_offset);
         }
-
-
-
 
         send_to_control.offset_torque = pdo_get_offset_torque(InOut); /* FIXME send this to the controll */
 #ifdef DEBUG_PRINT_ECAT
@@ -597,6 +594,14 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         if (state == S_SENSOR_FAULT){
             actual_position = scale_to_motion(actual_position,sensor_scale,sensor_offset);
         }
+
+#ifdef DEBUG_PRINT_ECAT
+    printf("Motion Position %lld\nCommutation Position %lld\n",pos_2,pos_1);
+    printf("Sensor Scale : %f\n",sensor_scale);
+    printf("Sensor Offset: %d\n",sensor_offset);
+    printf("Upscaled from Commutation Position: %lld\n", scale_to_motion(pos_1,sensor_scale,sensor_offset));
+    printf("Downscaled Setpoint: %lld\n", scale_to_comm(pos_2,sensor_scale,sensor_offset));
+#endif
 
         actual_velocity = send_to_master.velocity; //i_motion_control.get_velocity();
         actual_torque   = send_to_master.computed_torque;//*1000) / motorcontrol_config.rated_torque; //torque sent to master in 1/1000 of rated torque
@@ -907,7 +912,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                   position_feedback_config_1.sensor_function = SENSOR_1_FUNCTION;
                   position_feedback_config_2.sensor_function = SENSOR_2_FUNCTION;
 
-                  float multiturn_pos;
+                  long long multiturn_pos;
                   {multiturn_pos,void,void} = i_position_feedback_1.get_position();
 
                   i_position_feedback_2.set_position(scale_to_motion(multiturn_pos,sensor_scale,sensor_offset));
