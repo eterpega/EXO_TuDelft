@@ -332,11 +332,11 @@ static void debug_print_state(DriveState_t state)
 #define UPDATE_VELOCITY_GAIN    0x000000f0
 #define UPDATE_TORQUE_GAIN      0x00000f00
 
-long long scale_to_comm(long long position,float scale_f,int offset){
-    return (long long)((long long)((float)position*scale_f)) + (long long) offset;
+long long scale_to_comm(long long position,double scale_f,int offset){
+    return (long long)((long long)((double)position*scale_f)) + (long long) offset;
 }
-long long scale_to_motion(long long position,float scale_f,int offset){
-    return (long long)(((float)(position-(long long) offset))/scale_f);
+long long scale_to_motion(long long position,double scale_f,int offset){
+    return (long long)(((double)(position-(long long) offset))/scale_f);
 }
 /* NOTE:
  * - op mode change only when we are in "Ready to Swtich on" state or below (basically op mode is set locally in this state).
@@ -367,7 +367,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
     int actual_position = 0;
     int follow_error = 0;
     uint16_t last_statusword = 0;
-    float sensor_scale= 1.0;
+    double sensor_scale= 1.0;
     long long sensor_offset =0;
 
     //int target_position_progress = 0; /* is current target_position necessary to remember??? */
@@ -430,7 +430,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
     MotorcontrolConfig motorcontrol_config = i_torque_control.get_config();
     UpstreamControlData   send_to_master = { 0 };
     DownstreamControlData send_to_control = { 0 };
-    sensor_scale =  ((float)(position_feedback_config_1.resolution*TRANSMISSION))/(float) (position_feedback_config_2.resolution);
+    sensor_scale =  ((double)(position_feedback_config_1.resolution*TRANSMISSION))/(double) (position_feedback_config_2.resolution);
     long long pos_1,pos_2;
     {pos_1,void,void} = i_position_feedback_1.get_position();
     {pos_2,void,void} = i_position_feedback_2.get_position();
@@ -797,9 +797,9 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                     position_feedback_config_2.sensor_function = SENSOR_FUNCTION_DISABLED;
                     position_feedback_config_1.sensor_function = SENSOR_FUNCTION_COMMUTATION_AND_MOTION_CONTROL;
 
-                    motion_control_config.position_kp = (int)((float)motion_control_config.position_kp / sensor_scale);
-                    motion_control_config.position_ki = (int)((float)motion_control_config.position_ki / sensor_scale);
-                    motion_control_config.position_kd = (int)((float)motion_control_config.position_kd / sensor_scale);
+                    motion_control_config.position_kp = (int)((double)motion_control_config.position_kp / sensor_scale);
+                    motion_control_config.position_ki = (int)((double)motion_control_config.position_ki / sensor_scale);
+                    motion_control_config.position_kd = (int)((double)motion_control_config.position_kd / sensor_scale);
                     motion_control_config.max_pos_range_limit = scale_to_comm(motion_control_config.max_pos_range_limit,sensor_scale,sensor_offset);
                     motion_control_config.min_pos_range_limit = scale_to_comm(motion_control_config.min_pos_range_limit,sensor_scale,sensor_offset);
 
@@ -920,9 +920,9 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                   i_position_feedback_2.set_config(position_feedback_config_2);
 
 
-                  motion_control_config.position_kp = (int)((float)motion_control_config.position_kp *sensor_scale);
-                  motion_control_config.position_ki = (int)((float)motion_control_config.position_ki *sensor_scale);
-                  motion_control_config.position_kd = (int)((float)motion_control_config.position_kd *sensor_scale);
+                  motion_control_config.position_kp = (int)((double)motion_control_config.position_kp *sensor_scale);
+                  motion_control_config.position_ki = (int)((double)motion_control_config.position_ki *sensor_scale);
+                  motion_control_config.position_kd = (int)((double)motion_control_config.position_kd *sensor_scale);
                   motion_control_config.max_pos_range_limit = scale_to_motion(motion_control_config.max_pos_range_limit,sensor_scale,sensor_offset);
                   motion_control_config.min_pos_range_limit = scale_to_motion(motion_control_config.min_pos_range_limit,sensor_scale,sensor_offset);
 
