@@ -595,13 +595,6 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
             actual_position = scale_to_motion(actual_position,sensor_scale,sensor_offset);
         }
 
-#ifdef DEBUG_PRINT_ECAT
-    printf("Motion Position %lld\nCommutation Position %lld\n",pos_2,pos_1);
-    printf("Sensor Scale : %f\n",sensor_scale);
-    printf("Sensor Offset: %d\n",sensor_offset);
-    printf("Upscaled from Commutation Position: %lld\n", scale_to_motion(pos_1,sensor_scale,sensor_offset));
-    printf("Downscaled Setpoint: %lld\n", scale_to_comm(pos_2,sensor_scale,sensor_offset));
-#endif
 
         actual_velocity = send_to_master.velocity; //i_motion_control.get_velocity();
         actual_torque   = send_to_master.computed_torque;//*1000) / motorcontrol_config.rated_torque; //torque sent to master in 1/1000 of rated torque
