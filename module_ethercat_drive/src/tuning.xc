@@ -146,7 +146,7 @@ int tuning_handler_ethercat(
 
     //mux send offsets and other data in the tuning result pdo using the lower bits of statusword
     status_mux++;
-    if (status_mux > TUNING_STATUS_MUX_RATED_TORQUE) {
+    if (status_mux > 23) { // 23 is prime, so its a lot less likely to keep receiving values you already know
         status_mux = 1;
     }
     switch(status_mux) {
@@ -206,6 +206,12 @@ int tuning_handler_ethercat(
         break;
     case TUNING_STATUS_MUX_RATED_TORQUE:// motion control error
         user_miso = motorcontrol_config.rated_torque;
+        break;
+    case TUNING_STATUS_MUX_SOFT_STOP_THRESHOLD:
+        user_miso = motion_ctrl_config.soft_stop_threshold;
+        break;
+    default:
+        user_miso = 72;
         break;
     }
 
@@ -308,6 +314,9 @@ void tuning_command_handler(
             break;
         case TUNING_CMD_POLARITY_MOTION:
             motion_ctrl_config.polarity = tuning_mode_state.value;
+            break;
+        case TUNING_CMD_SOFT_STOP_THRESHOLD:
+            motion_ctrl_config.soft_stop_threshold = tuning_mode_state.value;
             break;
         case TUNING_CMD_POLARITY_SENSOR:
             if (sensor_commutation == 2) {
