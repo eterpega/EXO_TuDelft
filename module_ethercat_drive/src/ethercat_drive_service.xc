@@ -907,8 +907,8 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
 
                   long long multiturn_pos;
                   {multiturn_pos,void,void} = i_position_feedback_1.get_position();
-
-                  i_position_feedback_2.set_position(scale_to_motion(multiturn_pos,sensor_scale,sensor_offset));
+                  {void, actual_position, void} = i_position_feedback_2.get_position(); // since we use this code inside the joint, so no multiturns, we can use the actual aksim angle as the new basis for the multiturn position
+                  i_position_feedback_2.set_position(actual_position);
                   i_position_feedback_1.set_config(position_feedback_config_1);
                   i_position_feedback_2.set_config(position_feedback_config_2);
 
