@@ -19,6 +19,7 @@
 #include <xscope.h>
 #include <tuning.h>
 #include <user_config.h>
+#include <joint_config.h>
 
 /* FIXME move to some stdlib */
 #define ABSOLUTE_VALUE(x)   (x < 0 ? -x : x)
@@ -616,6 +617,28 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
             commutation_sensor_error = SENSOR_NO_ERROR;
         }
         if(run_nr < 3) {
+            printstrln("Actual position at boot:");
+            printintln(actual_position);
+#ifdef WRONG_POSITION_RANGE
+            // this code fixes the problem where booting in the wrong position causes the position to be wrong by a single rotation
+            printstrln("Wrong position range min & max:");
+            printintln(WRONG_POSITION_RANGE_MIN);
+            printintln(WRONG_POSITION_RANGE_MAX);
+            if(WRONG_POSITION_RANGE_MIN <= actual_position && actual_position <= WRONG_POSITION_RANGE_MAX) {
+                printstrln("Correcting multiturn position by 360 degrees");
+                int corrected_position;
+                if(actual_position < motion_control_config.min_pos_range_limit) {
+                    corrected_position = actual_position + position_feedback_config_2.resolution;
+                } else if(actual_position > motion_control_config.max_pos_range_limit) {
+                    corrected_position = actual_position - position_feedback_config_2.resolution;
+                }
+                i_position_feedback_2.set_position(corrected_position);
+                printstrln("Corrected position to:");
+                printintln(corrected_position);
+            }
+            // note that this also works when a sensor error occurs; as the non-errored previous position is stored, and we have 120 degrees of rotation,
+            // the difference between two positions can never be larger than half a rotation, so the multiturn position can not encounter the startup problem.
+#endif
             if(actual_position == 0 && motion_control_error == MOTION_CONTROL_HARD_STOP_REACHED) {
                 // then the aksim is disconnected at boot. this can't be resolved, since the hard stop needs to be resolved first
                 printstrln("Aksim is disconnected at boot!");
