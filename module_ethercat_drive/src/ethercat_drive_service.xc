@@ -82,6 +82,9 @@ static int get_cia402_error_code(FaultCode motorcontrol_fault, SensorError motio
             case MOTION_CONTROL_HARD_STOP_REACHED:
                 error_code = ERROR_CODE_ACTUAL_POSITION_OUT_OF_BOUNDS;
                 break;
+            case NO_JOINT_ENCODER_AT_BOOT:
+                error_code = ERROR_CODE_NO_JOINT_ENCODER_AT_BOOT;
+                break;
             case MOTION_CONTROL_NO_ERROR:
                 error_code = 72;
                 break;
@@ -480,6 +483,9 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
     /* start operation */
     int read_configuration = 1;
 
+    int run_nr = 1;
+    int had_joint_encoder_at_boot = 1;
+
 
     t :> time;
     while (1) {
@@ -602,6 +608,21 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         SensorError motion_sensor_error = send_to_master.last_sensor_error; // last is only triggered when the error happened 100 times
         SensorError commutation_sensor_error = send_to_master.angle_last_sensor_error;
         MotionControlError motion_control_error = send_to_master.motion_control_error;
+        if(had_joint_encoder_at_boot == 0) {
+            // go into unresolvable fault state by always setting motion_control_error
+            motion_control_error = NO_JOINT_ENCODER_AT_BOOT;
+            // override sensor errors as they take precedence
+            motion_sensor_error = SENSOR_NO_ERROR;
+            commutation_sensor_error = SENSOR_NO_ERROR;
+        }
+        if(run_nr < 3) {
+            if(actual_position == 0 && motion_control_error == MOTION_CONTROL_HARD_STOP_REACHED) {
+                // then the aksim is disconnected at boot. this can't be resolved, since the hard stop needs to be resolved first
+                printstrln("Aksim is disconnected at boot!");
+                had_joint_encoder_at_boot = 0;
+            }
+            run_nr = run_nr + 1;
+        }
 //        xscope_int(TARGET_POSITION, send_to_control.position_cmd);
 //        xscope_int(ACTUAL_POSITION, actual_position);
 //        xscope_int(FAMOUS_FAULT, motorcontrol_fault * 1000);
@@ -980,7 +1001,6 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
             opmode = OPMODE_NONE;
             statusword      = update_statusword(statusword, state, 0, 0, 0); /* FiXME update ack, q_active and shutdown_ack */
         }
-
         /* wait 1 ms to respect timing */
         t when timerafter(time + tile_usec*1000) :> time;
 
