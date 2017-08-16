@@ -829,7 +829,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
             case S_FAULT_REACTION_ACTIVE:
                 /* a fault is detected, perform fault recovery actions like a quick_stop */
 
-                if(motion_sensor_error != SENSOR_NO_ERROR && motion_control_error == MOTION_CONTROL_NO_ERROR && motorcontrol_fault == NO_FAULT && commutation_sensor_error == SENSOR_NO_ERROR){
+                if(motion_sensor_error != SENSOR_NO_ERROR && (motion_control_error == MOTION_CONTROL_NO_ERROR || motion_control_error == MIN_TARGET_POSITION_EXCEEDED || motion_control_error == MAX_TARGET_POSITION_EXCEEDED) && motorcontrol_fault == NO_FAULT && commutation_sensor_error == SENSOR_NO_ERROR){
                         //Switch to position sensor and try to keep setpoint
                     position_feedback_config_2.sensor_function = SENSOR_FUNCTION_DISABLED;
                     position_feedback_config_1.sensor_function = SENSOR_FUNCTION_COMMUTATION_AND_MOTION_CONTROL;
@@ -884,7 +884,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                  */
                  if (read_controlword_fault_reset(controlword) && checklist.fault_reset_wait == false) {
 #ifdef DEBUG_PRINT_ECAT
-                         printf("Clear Error received\n");
+                       //  printf("Clear Error received\n");
 
 #endif
                         //reset fault in motorcontrol
@@ -950,9 +950,21 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                   position_feedback_config_2.sensor_function = SENSOR_2_FUNCTION;
 
                   long long multiturn_pos;
+                  unsigned int raw_position;
                   {multiturn_pos,void,void} = i_position_feedback_1.get_position();
-                  {void, actual_position, void} = i_position_feedback_2.get_position(); // since we use this code inside the joint, so no multiturns, we can use the actual aksim angle as the new basis for the multiturn position
-                  i_position_feedback_2.set_position(actual_position);
+                  {void, raw_position, void} = i_position_feedback_2.get_position(); // since we use this code inside the joint, so no multiturns, we can use the actual aksim angle as the new basis for the multiturn position
+                  printstrln("actual_position:");
+                  printintln(raw_position);
+                  // this actual position needs to go through multiturn once, to get the same position as we would have gotten at startup, so we repeat the multiturn calculation
+                  long long actual_count;
+                  if(raw_position >= position_feedback_config_2.resolution/2) {
+                      actual_count = raw_position - position_feedback_config_2.resolution;
+                  } else if (-raw_position >= position_feedback_config_2.resolution) {
+                      actual_count = raw_position + position_feedback_config_2.resolution;
+                  } else {
+                      actual_count = raw_position;
+                  }
+                  i_position_feedback_2.set_position(actual_count);
                   i_position_feedback_1.set_config(position_feedback_config_1);
                   i_position_feedback_2.set_config(position_feedback_config_2);
 
