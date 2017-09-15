@@ -337,10 +337,10 @@ static void debug_print_state(DriveState_t state)
 #define UPDATE_TORQUE_GAIN      0x00000f00
 
 long long scale_to_comm(long long position,double scale_f,int offset){
-    return (long long)((long long)((double)position*scale_f)) + (long long) offset;
+    return (long long)((long long)((double)position*scale_f*RELATIVE_ENC_POLARITY)) + (long long) offset;
 }
 long long scale_to_motion(long long position,double scale_f,int offset){
-    return (long long)(((double)(position-(long long) offset))/scale_f);
+    return (long long)(((double)(position-(long long) offset))*RELATIVE_ENC_POLARITY/scale_f);
 }
 /* NOTE:
  * - op mode change only when we are in "Ready to Swtich on" state or below (basically op mode is set locally in this state).
@@ -438,7 +438,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
     long long pos_1,pos_2;
     {pos_1,void,void} = i_position_feedback_1.get_position();
     {pos_2,void,void} = i_position_feedback_2.get_position();
-    sensor_offset = (long long)pos_1-(pos_2* sensor_scale);
+    sensor_offset = (long long)pos_1-(pos_2*RELATIVE_ENC_POLARITY* sensor_scale);
 #ifdef DEBUG_PRINT_ECAT
     printf("Motion Position %lld\nCommutation Position %lld\n",pos_2,pos_1);
     printf("Sensor Scale : %f\n",sensor_scale);
