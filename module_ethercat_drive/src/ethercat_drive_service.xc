@@ -668,6 +668,10 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         /* Write error code to object dictionary */
         int error_code = get_cia402_error_code(motorcontrol_fault, motion_sensor_error, commutation_sensor_error, motion_control_error);
 
+        if(error_code == 72 && state == S_SENSOR_FAULT) {
+            error_code = ERROR_CODE_SENSOR;
+        }
+
         i_coe.set_object_value(DICT_ERROR_CODE, 0, error_code);
         pdo_set_error_code(error_code, InOut);
 
@@ -845,6 +849,11 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                     }else {
                         motion_control_config.min_pos_range_limit = naive_max_pos;
                         motion_control_config.max_pos_range_limit = naive_min_pos;
+                        if(motion_control_config.polarity == MOTION_POLARITY_NORMAL) {
+                            motion_control_config.polarity = MOTION_POLARITY_INVERTED;
+                        } else {
+                            motion_control_config.polarity = MOTION_POLARITY_NORMAL;
+                        }
                     }
 
                     i_position_feedback_1.set_config(position_feedback_config_1);
@@ -988,6 +997,11 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                   }else {
                       motion_control_config.min_pos_range_limit = naive_max_pos;
                       motion_control_config.max_pos_range_limit = naive_min_pos;
+                      if(motion_control_config.polarity == MOTION_POLARITY_NORMAL) {
+                          motion_control_config.polarity = MOTION_POLARITY_INVERTED;
+                      } else {
+                          motion_control_config.polarity = MOTION_POLARITY_NORMAL;
+                      }
                   }
 
 
