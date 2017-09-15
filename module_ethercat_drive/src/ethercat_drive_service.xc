@@ -837,8 +837,15 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                     motion_control_config.position_kp = (int)((double)motion_control_config.position_kp / sensor_scale);
                     motion_control_config.position_ki = (int)((double)motion_control_config.position_ki / sensor_scale);
                     motion_control_config.position_kd = (int)((double)motion_control_config.position_kd / sensor_scale);
-                    motion_control_config.max_pos_range_limit = scale_to_comm(motion_control_config.max_pos_range_limit,sensor_scale,sensor_offset);
-                    motion_control_config.min_pos_range_limit = scale_to_comm(motion_control_config.min_pos_range_limit,sensor_scale,sensor_offset);
+                    int naive_min_pos = scale_to_comm(motion_control_config.min_pos_range_limit,sensor_scale,sensor_offset);
+                    int naive_max_pos = scale_to_comm(motion_control_config.max_pos_range_limit,sensor_scale,sensor_offset);
+                    if(RELATIVE_ENC_POLARITY == 1) {
+                        motion_control_config.min_pos_range_limit = naive_min_pos;
+                        motion_control_config.max_pos_range_limit = naive_max_pos;
+                    }else {
+                        motion_control_config.min_pos_range_limit = naive_max_pos;
+                        motion_control_config.max_pos_range_limit = naive_min_pos;
+                    }
 
                     i_position_feedback_1.set_config(position_feedback_config_1);
                     i_position_feedback_2.set_config(position_feedback_config_2);
@@ -972,8 +979,16 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                   motion_control_config.position_kp = (int)((double)motion_control_config.position_kp *sensor_scale);
                   motion_control_config.position_ki = (int)((double)motion_control_config.position_ki *sensor_scale);
                   motion_control_config.position_kd = (int)((double)motion_control_config.position_kd *sensor_scale);
-                  motion_control_config.max_pos_range_limit = scale_to_motion(motion_control_config.max_pos_range_limit,sensor_scale,sensor_offset);
-                  motion_control_config.min_pos_range_limit = scale_to_motion(motion_control_config.min_pos_range_limit,sensor_scale,sensor_offset);
+
+                  int naive_min_pos = scale_to_motion(motion_control_config.min_pos_range_limit,sensor_scale,sensor_offset);
+                  int naive_max_pos = scale_to_motion(motion_control_config.max_pos_range_limit,sensor_scale,sensor_offset);
+                  if(RELATIVE_ENC_POLARITY == 1) {
+                      motion_control_config.min_pos_range_limit = naive_min_pos;
+                      motion_control_config.max_pos_range_limit = naive_max_pos;
+                  }else {
+                      motion_control_config.min_pos_range_limit = naive_max_pos;
+                      motion_control_config.max_pos_range_limit = naive_min_pos;
+                  }
 
 
                   i_motion_control.set_motion_control_config(motion_control_config);
