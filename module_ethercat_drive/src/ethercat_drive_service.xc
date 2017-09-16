@@ -486,6 +486,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
 
     int run_nr = 1;
     int had_joint_encoder_at_boot = 1;
+    int prev_target_pos = 0;
 
 
     t :> time;
@@ -524,10 +525,18 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         controlword     = pdo_get_controlword(InOut);
         opmode_request  = pdo_get_op_mode(InOut);
         target_position = pdo_get_target_position(InOut);
+        if(prev_target_pos != target_position) {
+            prev_target_pos = target_position;
+            printf("Raw target pos changed to %d\n", target_position);
+        }
         target_velocity = pdo_get_target_velocity(InOut);
         target_torque   = pdo_get_target_torque(InOut);//*motorcontrol_config.rated_torque) / 1000; //target torque received in 1/1000 of rated torque
         if (state == S_SENSOR_FAULT){
-            target_position = scale_to_comm(target_position,sensor_scale,sensor_offset);
+            if(motion_control_config.polarity == MOTION_POLARITY_INVERTED) {
+                target_position = -1*scale_to_comm(-1*target_position,sensor_scale,sensor_offset); // since motion_ctrl takes negated position feedback values
+            } else {
+                target_position = scale_to_comm(target_position,sensor_scale,sensor_offset);
+            }
         }
 
         send_to_control.offset_torque = pdo_get_offset_torque(InOut); /* FIXME send this to the controll */
@@ -599,7 +608,11 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
         actual_position = send_to_master.position; //i_motion_control.get_position();
         /* i_motion_control.get_all_feedbacks; */
         if (state == S_SENSOR_FAULT){
-            actual_position = scale_to_motion(actual_position,sensor_scale,sensor_offset);
+            if(motion_control_config.polarity == MOTION_POLARITY_INVERTED) {
+                actual_position = -1*scale_to_motion(-1*actual_position,sensor_scale,sensor_offset); // since motion_ctrl takes negated position feedback values
+            } else {
+                actual_position = scale_to_motion(actual_position,sensor_scale,sensor_offset);
+            }
         }
 
 
@@ -966,7 +979,7 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                   position_feedback_config_2.sensor_function = SENSOR_2_FUNCTION;
 
                   long long multiturn_pos;
-                  unsigned int raw_position;
+                  int raw_position;
                   {multiturn_pos,void,void} = i_position_feedback_1.get_position();
                   {void, raw_position, void} = i_position_feedback_2.get_position(); // since we use this code inside the joint, so no multiturns, we can use the actual aksim angle as the new basis for the multiturn position
                   printstrln("actual_position:");
@@ -975,11 +988,13 @@ void ethercat_drive_service(ProfilerConfig &profiler_config,
                   long long actual_count;
                   if(raw_position >= position_feedback_config_2.resolution/2) {
                       actual_count = raw_position - position_feedback_config_2.resolution;
-                  } else if (-raw_position >= position_feedback_config_2.resolution) {
+                  } else if (-raw_position >= position_feedback_config_2.resolution/2) {
                       actual_count = raw_position + position_feedback_config_2.resolution;
                   } else {
                       actual_count = raw_position;
                   }
+                  printstrln("actual count:");
+                  printintln(actual_count);
                   i_position_feedback_2.set_position(actual_count);
                   i_position_feedback_1.set_config(position_feedback_config_1);
                   i_position_feedback_2.set_config(position_feedback_config_2);

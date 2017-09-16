@@ -369,27 +369,27 @@ int8_t update_opmode(int8_t opmode, int8_t opmode_request,
 {
     if (opmode != opmode_request) {
         motion_control_config = i_motion_control.get_motion_control_config();
-        motion_control_config.polarity = MOTION_POLARITY_NORMAL;
-        switch(opmode_request) {
-        case OPMODE_NONE:
-        case OPMODE_CST:
-        case OPMODE_SNCN_TUNING:
-            break;
-        //for CSP and CSV we also check the polarity object DICT_POLARITY (0x607E)
-        case OPMODE_CSP:
-            if (polarity & MOTION_POLARITY_POSITION) {
-                motion_control_config.polarity = MOTION_POLARITY_INVERTED;
-            }
-            break;
-        case OPMODE_CSV:
-            if (polarity & MOTION_POLARITY_VELOCITY) {
-                motion_control_config.polarity = MOTION_POLARITY_INVERTED;
-            }
-            break;
-        default:
-            opmode_request = OPMODE_NONE;
-            break;
-        }
+//        motion_control_config.polarity = MOTION_POLARITY_NORMAL;
+//        switch(opmode_request) {
+//        case OPMODE_NONE:
+//        case OPMODE_CST:
+//        case OPMODE_SNCN_TUNING:
+//            break;
+//        //for CSP and CSV we also check the polarity object DICT_POLARITY (0x607E)
+//        case OPMODE_CSP:
+//            if (polarity & MOTION_POLARITY_POSITION) {
+//                motion_control_config.polarity = MOTION_POLARITY_INVERTED;
+//            }
+//            break;
+//        case OPMODE_CSV:
+//            if (polarity & MOTION_POLARITY_VELOCITY) {
+//                motion_control_config.polarity = MOTION_POLARITY_INVERTED;
+//            }
+//            break;
+//        default:
+//            opmode_request = OPMODE_NONE;
+//            break;
+//        }
         i_motion_control.set_motion_control_config(motion_control_config);
         return opmode_request;
     }
