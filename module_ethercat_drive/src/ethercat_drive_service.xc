@@ -19,7 +19,7 @@
 #include <xscope.h>
 #include <tuning.h>
 #include <user_config.h>
-#include <joint_config.h>
+//#include <joint_config.h> COMMENT OUT THIS LINE WHEN BUILDING A NON-JOINT APP
 
 /* FIXME move to some stdlib */
 #define ABSOLUTE_VALUE(x)   (x < 0 ? -x : x)
